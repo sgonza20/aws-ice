@@ -1,0 +1,41 @@
+OS Supported in Scanner:
+
+/usr/share/xml/scap/ssg/content/ssg-amzn2-ds.xml
+/usr/share/xml/scap/ssg/content/ssg-centos6-ds.xml
+/usr/share/xml/scap/ssg/content/ssg-centos7-ds.xml
+/usr/share/xml/scap/ssg/content/ssg-firefox-ds.xml
+/usr/share/xml/scap/ssg/content/ssg-jre-ds.xml
+/usr/share/xml/scap/ssg/content/ssg-rhel6-ds.xml
+/usr/share/xml/scap/ssg/content/ssg-rhel7-ds.xml
+
+
+                options={[
+                  { label: "DISA STIG", value: "xccdf_org.ssgproject.content_profile_stig-rhel6-disa" },
+                  { label: "C2S", value: "xccdf_org.ssgproject.content_profile_C2S" },
+                  { label: "CSCF RHEL6 MLS Core Baseline", value: "xccdf_org.ssgproject.content_profile_CSCF-RHEL6-MLS" },
+                  { label: "PCI-DSS v3 Control Baseline", value: "xccdf_org.ssgproject.content_profile_pci-dss" },
+                  { label: "Standard System Security", value: "xccdf_org.ssgproject.content_profile_standard" },
+                  { label: "United States Government Configuration Baseline (USGCB)", value: "xccdf_org.ssgproject.content_profile_usgcb-rhel6-server" },
+                  { label: "Server Baseline", value: "xccdf_org.ssgproject.content_profile_server" },
+                  { label: "Red Hat Corporate Profile for Certified Cloud Providers (RH CCP)", value: "xccdf_org.ssgproject.content_profile_rht-ccp" },
+                  { label: "CNSSI 1253 Low/Low/Low Control Baseline", value: "xccdf_org.ssgproject.content_profile_nist-CL-IL-AL" },
+                  { label: "FTP Server Profile (vsftpd)", value: "xccdf_org.ssgproject.content_profile_ftp-server" },
+                  { label: "FISMA Medium", value: "xccdf_org.ssgproject.content_profile_fisma-medium-rhel6-server" },
+                  { label: "Desktop Baseline", value: "xccdf_org.ssgproject.content_profile_desktop" },
+
+
+
+
+
+                          { label: "DISA STIG", value: "xccdf_org.ssgproject.content_profile_stig-rhel6-disa" },
+        { label: "C2S", value: "xccdf_org.ssgproject.content_profile_C2S" },
+        { label: "CSCF RHEL6 MLS Core Baseline", value: "xccdf_org.ssgproject.content_profile_CSCF-RHEL6-MLS" },
+        { label: "PCI-DSS v3 Control Baseline", value: "xccdf_org.ssgproject.content_profile_pci-dss" },
+        { label: "Standard System Security", value: "xccdf_org.ssgproject.content_profile_standard" },
+        { label: "United States Government Configuration Baseline (USGCB)", value: "xccdf_org.ssgproject.content_profile_usgcb-rhel6-server" },
+        { label: "Server Baseline", value: "xccdf_org.ssgproject.content_profile_server" },
+        { label: "Red Hat Corporate Profile for Certified Cloud Providers (RH CCP)", value: "xccdf_org.ssgproject.content_profile_rht-ccp" },
+        { label: "CNSSI 1253 Low/Low/Low Control Baseline", value: "xccdf_org.ssgproject.content_profile_nist-CL-IL-AL" },
+        { label: "FTP Server Profile (vsftpd)", value: "xccdf_org.ssgproject.content_profile_ftp-server" },
+        { label: "FISMA Medium", value: "xccdf_org.ssgproject.content_profile_fisma-medium-rhel6-server" },
+        { label: "Desktop Baseline", value: "xccdf_org.ssgproject.content_profile_desktop" },
