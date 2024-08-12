@@ -57,7 +57,7 @@ export const handler: Schema["GetInstances"]["functionHandler"] = async (
     console.log("Fetched EC2 Instances:", instances);
 
     const scanParams = {
-      TableName: process.env.INSTANCE_TABLE_NAME,
+      TableName: INSTANCE_TABLE_NAME,
     };
     const scanResult = await dynamoDBClient.send(new ScanCommand(scanParams));
     const dynamoDBInstances = scanResult.Items?.map(item => item.InstanceId?.S) || [];
