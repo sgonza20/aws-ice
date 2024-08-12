@@ -59,6 +59,7 @@ export const handler: Schema["GetInstances"]["functionHandler"] = async (
     const scanParams = {
       TableName: INSTANCE_TABLE_NAME,
     };
+    console.log("Scanning DynamoDB table:", scanParams);
     const scanResult = await dynamoDBClient.send(new ScanCommand(scanParams));
     const dynamoDBInstances = scanResult.Items?.map(item => item.InstanceId?.S) || [];
 
@@ -73,6 +74,7 @@ export const handler: Schema["GetInstances"]["functionHandler"] = async (
           "InstanceId": { S: instanceId as string } as AttributeValue
         },
       };
+      console.log("Deleting instance from DynamoDB:", deleteParams);
       await dynamoDBClient.send(new DeleteItemCommand(deleteParams));
       console.log(`Deleted instance with InstanceId: ${instanceId}`);
     }

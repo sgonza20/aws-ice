@@ -11,6 +11,7 @@ import {
   Spinner,
   StatusIndicator,
   Form,
+  Icon,
   FormField,
   Select
 } from "@cloudscape-design/components";
@@ -82,15 +83,15 @@ export default function EC2Instances() {
     console.log(data, errors);
 
     if (data?.statusCode === 200) {
-    if (typeof data.body === 'string'){
-    const commandId = data.body;
-      await client.models.Instance.update({
-        InstanceId: InstanceID,
-        LastScanTime: new Date().toISOString(),
-        CommandId: commandId,
-        ScanStatus: 'InProgress',
-      });
-    }
+      if (typeof data.body === 'string'){
+        const commandId = data.body;
+        await client.models.Instance.update({
+          InstanceId: InstanceID,
+          LastScanTime: new Date().toISOString(),
+          CommandId: commandId,
+          ScanStatus: 'InProgress',
+        });
+      }
     }
   }
 
@@ -121,8 +122,16 @@ export default function EC2Instances() {
         variant="h1"
         actions={
           <SpaceBetween size="xs" direction="horizontal">
-            <Button onClick={fetchInstances} variant="primary">
-              {isLoading ? <Spinner /> : "Refresh"}
+            <Button
+              onClick={fetchInstances}
+              ariaLabel="Refresh Instances"
+            >
+              {isLoading ? (
+                <Spinner />
+              ) : (
+                <Icon name="refresh" />
+              )}
+              {!isLoading}
             </Button>
             <Button
               onClick={() => selectedInstances.length > 0 && setIsDeleteModalVisible(true)}
@@ -130,8 +139,10 @@ export default function EC2Instances() {
             >
               Delete
             </Button>
-            <Button variant="primary" onClick={() => setIsRunModalVisible(true)}>
-              Run
+            <Button
+              onClick={() => setIsRunModalVisible(true)}
+            >
+              Run Scan
             </Button>
           </SpaceBetween>
         }
