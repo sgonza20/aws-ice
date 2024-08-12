@@ -56,6 +56,20 @@ const scanStatusFunction = new NodejsFunction(
   }
 );
 
+const fetchInstancesFunction = new NodejsFunction(
+  customResourceStack,
+  "AwsFetchInstancesFunction",
+  {
+    runtime: lambda.Runtime.NODEJS_18_X,
+    entry: url.fileURLToPath(
+      new URL("./functions/describe-instances/handler.ts", import.meta.url)
+    ),
+    environment: {
+      INSTANCE_TABLE_NAME: instanceTableName,
+    },
+    logRetention: logs.RetentionDays.ONE_MONTH,
+  }
+);
 
 const readWriteToInstanceTableStatement = new iam.PolicyStatement({
   sid: "DynamoDBAccess",
@@ -77,6 +91,7 @@ const readWriteToInstanceTableStatement = new iam.PolicyStatement({
   resources: [instanceTableArn, instanceTableArn + "/*"],
 });
 scanStatusFunction.addToRolePolicy(readWriteToInstanceTableStatement);
+fetchInstancesFunction.addToRolePolicy(readWriteToInstanceTableStatement);
 
 new logs.SubscriptionFilter(
   customResourceStack,
@@ -112,7 +127,6 @@ const InvokesSSMPolicy = new iam.PolicyStatement({
 const runSSM = backend.invokeSSM.resources.lambda;
 runSSM.addToRolePolicy(InvokesSSMPolicy);
 
-// Define the CloudWatch Rule to listen for SSM Command state changes
 const ssmStateChangeRule = new events.Rule(
   customResourceStack,
   "SSMCommandStateChangeRule",
@@ -121,7 +135,7 @@ const ssmStateChangeRule = new events.Rule(
       source: ["aws.ssm"],
       detailType: ["EC2 Instance State-change Notification"],
       detail: {
-        state: ["Success", "Failed", "InProgress"], // Adjust as needed
+        state: ["Success", "Failed", "InProgress", "Cancelled"],
       },
     },
     targets: [
@@ -130,4 +144,13 @@ const ssmStateChangeRule = new events.Rule(
       }),
     ],
   }
+);
+
+// Rule to regularly clean up instances that no longer exist
+const cleanupRule = new events.Rule(customResourceStack, "CleanupInstancesRule", {
+  schedule: events.Schedule.expression("rate(1 day)"),
+});
+
+cleanupRule.addTarget(
+  new targets.LambdaFunction(fetchInstancesFunction)
 );
