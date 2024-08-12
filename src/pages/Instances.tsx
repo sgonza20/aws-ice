@@ -88,7 +88,7 @@ export default function EC2Instances() {
         InstanceId: InstanceID,
         LastScanTime: new Date().toISOString(),
         CommandId: commandId,
-        ScanStatus: 'InProgress',
+        ScanStatus: 'In Progress',
       });
     }
     }
