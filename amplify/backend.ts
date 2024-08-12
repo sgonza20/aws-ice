@@ -135,7 +135,7 @@ const ssmStateChangeRule = new events.Rule(
       source: ["aws.ssm"],
       detailType: ["EC2 Instance State-change Notification"],
       detail: {
-        state: ["Success", "Failed", "In Progress", "Cancelled"],
+        state: ["Success", "Failed", "InProgress", "Cancelled"],
       },
     },
     targets: [
