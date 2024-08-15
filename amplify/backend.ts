@@ -119,7 +119,7 @@ const ssmStateChangeRule = new events.Rule(
   {
     eventPattern: {
       source: ["aws.ssm"],
-      detailType: ["EC2 Command Status-change Notification"],
+      detailType: ["EC2 Command Status-change Notification", "EC2 Command Invocation Status-change Notification"],
     },
     targets: [
       new targets.LambdaFunction(scanStatusFunction, {
