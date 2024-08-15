@@ -37,9 +37,13 @@ export default function EC2Instances() {
 
   useEffect(() => {
     fetchInstances();
-    client.models.Instance.observeQuery().subscribe({
+    const subscription = client.models.Instance.observeQuery().subscribe({
       next: (data) => setInstances([...data.items])
     });
+    return () => {
+      subscription.unsubscribe(); // Clean up subscription on component unmount
+    };
+  
   }, []);
 
   async function fetchInstances() {
