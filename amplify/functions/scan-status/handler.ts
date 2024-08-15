@@ -7,11 +7,12 @@ const INSTANCE_TABLE_NAME = process.env.INSTANCE_TABLE_NAME!;
 export const handler = async (event: any) => {
   console.log("Received event:", JSON.stringify(event, null, 2));
 
+  const detail = event.detail || {};
+  console.log("Event detail:", JSON.stringify(detail, null, 2));
 
-  const detail = event.detail;
   const commandId = detail["command-id"];
   const status = detail.status;
-  const instanceId = event.resources[0].split("/")[1];
+  const instanceId = event.resources ? event.resources[0].split("/")[1] : undefined;
 
   if (!commandId || !status || !instanceId) {
     console.error("Missing required fields in event:", { commandId, status, instanceId });
