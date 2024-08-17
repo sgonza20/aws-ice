@@ -5,6 +5,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import { describeInstances } from "./functions/describe-instances/resource";
 import { invokeSSM } from './functions/invoke-ssm/resource';
 import { scanStatus } from './functions/scan-status/resource';
+import { instanceFindings } from './functions/instance-findings/resource';
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as destinations from "aws-cdk-lib/aws-logs-destinations";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -12,21 +13,44 @@ import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as url from "url";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as s3Notifications from "aws-cdk-lib/aws-s3-notifications";
+import * as kms from "aws-cdk-lib/aws-kms";
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 const backend = defineBackend({
   auth,
   data,
   describeInstances,
   invokeSSM,
-  scanStatus
+  scanStatus,
+  instanceFindings
 });
 
 const instanceTableName = backend.data.resources.tables["Instance"].tableName;
 const instanceTableArn = backend.data.resources.tables["Instance"].tableArn;
+const findingsTableName = backend.data.resources.tables["Finding"].tableName;
+const findingsTableArn = backend.data.resources.tables["Finding"].tableArn;
 
 const scanStatusLambaArn = backend.scanStatus.resources.lambda.functionArn;
+const instanceFindingsLambdaArn = backend.instanceFindings.resources.lambda.functionArn;
+
 
 const customResourceStack = backend.createStack("AwsIceCustomResources");
+
+
+const kmsKey = new kms.Key(customResourceStack, "ScapS3KMS", {
+  enableKeyRotation: true,
+});
+
+const scapScanResultsBucket = new s3.Bucket(customResourceStack, "SCAPScanResultsBucket", {
+  bucketName: "my-scap-scan-results-bucket-2024-11-01", 
+  encryption: s3.BucketEncryption.KMS,
+  encryptionKey: kmsKey,
+  publicReadAccess: false,
+  blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+});
+
 
 const cfnUserPool = backend.auth.resources.cfnResources.cfnUserPool;
 cfnUserPool.adminCreateUserConfig = {
@@ -56,6 +80,21 @@ const scanStatusFunction = new NodejsFunction(
   }
 );
 
+const instanceFindingsFunction = new NodejsFunction(
+  customResourceStack,
+  "AwsinstanceFindingsFunction",
+  {
+    runtime: lambda.Runtime.NODEJS_18_X,
+    entry: url.fileURLToPath(
+      new URL("./functions/instance-findings/handler.ts", import.meta.url)
+    ),
+    environment: {
+      FINDINGS_TABLE_NAME: findingsTableName,
+      S3_BUCKET_NAME: scapScanResultsBucket.bucketName,
+    },
+    logRetention: logs.RetentionDays.ONE_MONTH,
+  }
+);
 
 const readWriteToInstanceTableStatement = new iam.PolicyStatement({
   sid: "DynamoDBAccess",
@@ -77,6 +116,7 @@ const readWriteToInstanceTableStatement = new iam.PolicyStatement({
   resources: [instanceTableArn, instanceTableArn + "/*"],
 });
 scanStatusFunction.addToRolePolicy(readWriteToInstanceTableStatement);
+instanceFindingsFunction.addToRolePolicy(readWriteToInstanceTableStatement);
 
 new logs.SubscriptionFilter(
   customResourceStack,
@@ -112,6 +152,30 @@ const InvokesSSMPolicy = new iam.PolicyStatement({
 const runSSM = backend.invokeSSM.resources.lambda;
 runSSM.addToRolePolicy(InvokesSSMPolicy);
 
+const s3Policy = new iam.PolicyStatement({
+  sid: "S3Access",
+  effect: iam.Effect.ALLOW,
+  actions: [
+    "s3:GetObject",
+    "s3:PutObject",
+    "s3:ListBucket",
+  ],
+  resources: [
+    scapScanResultsBucket.bucketArn,
+    `${scapScanResultsBucket.bucketArn}/*`,
+  ],
+});
+
+scanStatusFunction.addToRolePolicy(s3Policy);
+instanceFindingsFunction.addToRolePolicy(s3Policy);
+
+scapScanResultsBucket.addEventNotification(
+  s3.EventType.OBJECT_CREATED,
+  new s3Notifications.LambdaDestination(instanceFindingsFunction),
+  { prefix: '', suffix: '.xml' }
+);
+
+
 // Define the CloudWatch Rule to listen for SSM Command state changes
 const ssmStateChangeRule = new events.Rule(
   customResourceStack,
@@ -128,3 +192,101 @@ const ssmStateChangeRule = new events.Rule(
     ],
   }
 );
+
+const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDocument', {
+  content: {
+    schemaVersion: '2.2',
+    description: 'OpenSCAP scan and report upload to S3',
+    parameters: {
+      region: {
+        type: 'String',
+        description: 'The AWS region to use',
+        default: 'us-east-2'
+      },
+      s3bucket: {
+        type: 'String',
+        description: 'The S3 bucket to upload the report to'
+      },
+      OS: {
+        type: 'String',
+        description: 'The operating system to use'
+      },
+      Benchmark: {
+        type: 'String',
+        description: 'The benchmark to use'
+      }
+    },
+    mainSteps: [
+      {
+        action: 'aws:runShellScript',
+        name: 'mkdir_openSCAP',
+        inputs: {
+          runCommand: [
+            'if [ ! -d openscap ]; then mkdir openscap; fi'
+          ]
+        }
+      },
+      {
+        action: 'aws:runShellScript',
+        name: 'Install_OpenSCAP',
+        inputs: {
+          runCommand: [
+            'cd openscap && sudo yum install -y openscap-scanner'
+          ]
+        }
+      },
+      {
+        action: 'aws:runShellScript',
+        name: 'Install_scap_security_guide',
+        inputs: {
+          runCommand: [
+            'yes | sudo yum install -y scap-security-guide'
+          ]
+        }
+      },
+      {
+        action: 'aws:runShellScript',
+        name: 'Fix_broken_link',
+        inputs: {
+          runCommand: [
+            'sudo sed -i \'s|https://www.redhat.com/security/data/oval/com.redhat.rhsa-RHEL7.xml.bz2|https://www.redhat.com/security/data/oval/v2/RHEL7/rhel-7.oval.xml.bz2|g\' /usr/share/xml/scap/ssg/content/ssg-amzn2-ds.xml'
+          ]
+        }
+      },
+      {
+        action: 'aws:runShellScript',
+        name: 'Run_OpenSCAP_scan',
+        inputs: {
+          runCommand: [
+            'oscap xccdf eval --profile {{Benchmark}} --fetch-remote-resources --results-arf arf.xml --report report.html /usr/share/xml/scap/ssg/content/{{OS}} || true'
+          ]
+        }
+      },
+      {
+        action: 'aws:runShellScript',
+        name: 'Upload_report_to_S3',
+        inputs: {
+          runCommand: [
+            'INSTANCE_ID=$(ec2-metadata -i | cut -d \' \' -f 2)',
+            'DATE=$(date +\'%Y-%m-%d\')',
+            'aws configure set region {{region}}',
+            'aws s3 cp report.html s3://{{s3bucket}}/$INSTANCE_ID/$DATE/report.html'
+          ]
+        }
+      },
+      {
+        action: 'aws:runShellScript',
+        name: 'Clean_up',
+        inputs: {
+          runCommand: [
+            'yes | sudo yum erase openscap-scanner'
+          ]
+        }
+      }
+    ]
+  },
+  documentType: 'Command',
+});
+
+
+

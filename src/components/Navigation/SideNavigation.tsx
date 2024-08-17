@@ -13,30 +13,32 @@ export default function CustomSideNavigation() {
       onFollow={(event) => {
         if (!event.detail.external) {
           event.preventDefault();
-          setActiveHref(event.detail.href);
-          navigate(event.detail.href);
+          const href = event.detail.href;
+          setActiveHref(href);
+          navigate(href);
         }
       }}
       items={[
         {
-          type: "link",
-          text: "Home",
-          href: "/",
-        },
-        {
-          type: "link",
+          type: "section",
           text: "Instances",
-          href: "/instances",
+          items: [
+            { type: "link", text: "Home", href: "/instances" },
+          ],
         },
         {
-          type: "link",
-          text: "Remediation",
-          href: "/remediation",
+          type: "section",
+          text: "Reports",
+          items: [
+            { type: "link", text: "Home", href: "/reports" },
+          ],
         },
         {
-          type: "link",
+          type: "section",
           text: "Support",
-          href: "/support",
+          items: [
+            { type: "link", text: " Home", href: "/support" },
+          ],
         },
       ]}
     />

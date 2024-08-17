@@ -4,7 +4,7 @@ import { AppLayout } from "@cloudscape-design/components";
 import CustomTopNavigation from "./components/Navigation/TopNavigation";
 import CustomSideNavigation from "./components/Navigation/SideNavigation";
 import Instances from "./pages/Instances";
-import Remediation from "./pages/Remediation";
+import Reports from "./pages/Reports";
 import Support from "./pages/Support";
 import Home from "./pages/Home";
 
@@ -29,7 +29,7 @@ function App() {
               content={
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/remediation" element={<Remediation />} />
+                  <Route path="/reports" element={<Reports />} />
                   <Route path="/support" element={<Support />} />
                   <Route path="/instances" element={<Instances />} />
                 </Routes>
