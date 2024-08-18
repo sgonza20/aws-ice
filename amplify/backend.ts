@@ -175,6 +175,21 @@ scapScanResultsBucket.addEventNotification(
   { prefix: '', suffix: '.xml' }
 );
 
+const s3InvokeLambdaPolicy = new iam.PolicyStatement({
+  effect: iam.Effect.ALLOW,
+  actions: ['s3:PutObject'],
+  resources: [`${scapScanResultsBucket.bucketArn}/*`],
+  principals: [new iam.ServicePrincipal('s3.amazonaws.com')],
+  conditions: {
+    StringEquals: {
+      'aws:SourceArn': instanceFindingsFunction.functionArn
+    }
+  }
+});
+
+scapScanResultsBucket.addToResourcePolicy(s3InvokeLambdaPolicy);
+
+
 
 // Define the CloudWatch Rule to listen for SSM Command state changes
 const ssmStateChangeRule = new events.Rule(
@@ -205,7 +220,8 @@ const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDo
       },
       s3bucket: {
         type: 'String',
-        description: 'The S3 bucket to upload the report to'
+        description: 'The S3 bucket to upload the report to',
+        default: scapScanResultsBucket.bucketName
       },
       OS: {
         type: 'String',
@@ -270,7 +286,8 @@ const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDo
             'INSTANCE_ID=$(ec2-metadata -i | cut -d \' \' -f 2)',
             'DATE=$(date +\'%Y-%m-%d\')',
             'aws configure set region {{region}}',
-            'aws s3 cp report.html s3://{{s3bucket}}/$INSTANCE_ID/$DATE/report.html'
+            'aws s3 cp report.html s3://{{s3bucket}}/$INSTANCE_ID/$DATE/report.html',
+            'aws s3 cp arf.xml s3://{{s3bucket}}/$INSTANCE_ID/$DATE/arf.xml'
           ]
         }
       },
