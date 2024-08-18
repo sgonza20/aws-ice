@@ -7,7 +7,6 @@ import {
   StatusIndicator,
   Pagination,
   PieChart,
-  SpaceBetween,
 } from "@cloudscape-design/components";
 
 interface Finding {
@@ -33,7 +32,6 @@ export default function Reports() {
   }, []);
 
   // Calculate totals
-  const totalInstances = findings.length;
   const totalFailed = findings.reduce((sum, finding) => sum + finding.totalFailed, 0);
   const totalPassed = findings.reduce((sum, finding) => sum + finding.totalPassed, 0);
 
