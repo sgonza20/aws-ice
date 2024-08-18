@@ -37,13 +37,13 @@ exports.handler = async (event: any) => {
         const xml = data.Body?.toString('utf-8') || '';
         console.log("XML content retrieved");
 
-        const parser = new xml2js.Parser();
+        const parser = new xml2js.Parser({ explicitArray: true });
         const result = await parser.parseStringPromise(xml);
         console.log("XML parsed successfully");
 
-        console.log("Parsed XML structure:", JSON.stringify(result, null, 2));
+        // Adjust this line according to your XML structure
+        const testResult = result['xccdf:TestResult'] || [];
 
-        const testResult = result['xccdf:TestResult'];
         const instanceId = fileKey.split('/')[0];
 
         let high = 0;
