@@ -8,10 +8,17 @@ const bucketName = process.env.S3_BUCKET_NAME;
 export const processFindings: APIGatewayProxyHandler = async (event) => {
   const { InstanceId, FindingId, FindingType, FindingStatus, Details, Timestamp } = JSON.parse(event.body || '{}');
 
-  if (!InstanceId || !FindingId || !FindingType || !FindingStatus || !Details || !Timestamp) {
+  if (
+    typeof InstanceId !== 'string' ||
+    typeof FindingId !== 'string' ||
+    typeof FindingType !== 'string' ||
+    typeof FindingStatus !== 'string' ||
+    typeof Details !== 'object' || 
+    typeof Timestamp !== 'string'
+  ) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ message: 'Missing required parameters' }),
+      body: JSON.stringify({ message: 'Invalid parameter types' }),
     };
   }
 
