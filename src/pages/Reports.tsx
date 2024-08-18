@@ -22,7 +22,7 @@ const mockFindings: Finding[] = [
   // Add more mock data as needed
 ];
 
-export default function Remediation() {
+export default function Reports() {
   const [findings, setFindings] = useState<Finding[]>(mockFindings);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
 
