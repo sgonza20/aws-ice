@@ -14,6 +14,7 @@ import * as url from "url";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3Notifications from "aws-cdk-lib/aws-s3-notifications";
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+import { Duration } from 'aws-cdk-lib';
 
 
 const backend = defineBackend({
@@ -84,6 +85,8 @@ const instanceFindingsFunction = new NodejsFunction(
       S3_BUCKET_NAME: scapScanResultsBucket.bucketName,
     },
     logRetention: logs.RetentionDays.ONE_MONTH,
+    timeout: Duration.minutes(5),
+    memorySize: 512,
   }
 );
 
