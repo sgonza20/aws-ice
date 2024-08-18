@@ -102,7 +102,7 @@ export default function EC2Instances() {
   function confirmScan() {
     if (selectedOS && selectedBenchmark) {
       selectedInstances.forEach((item) =>
-        InvokeScan(item.InstanceId,"OpenSCAPDocument", selectedOS.value, selectedBenchmark.value)
+        InvokeScan(item.InstanceId,"AWS-ICE-SCAP-Scan", selectedOS.value, selectedBenchmark.value)
       );
       console.log(selectedInstances);
       setSelectedInstances([]);
