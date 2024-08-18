@@ -25,13 +25,15 @@
     "aws-sdk": "^2.1667.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.26.0"
+    "react-router-dom": "^6.26.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.0.4",
     "@aws-amplify/backend-cli": "^1.1.1",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
+    "@types/xml2js": "^0.4.14",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.2.1",
