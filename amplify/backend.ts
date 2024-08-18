@@ -191,7 +191,7 @@ const ssmStateChangeRule = new events.Rule(
   }
 );
 
-const ssmDocumentName = "AWS-ICE-SCAP-Scan";
+const ssmDocumentName = "AWSICESCAPScan";
 
 const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDocument', {
   name: ssmDocumentName,
