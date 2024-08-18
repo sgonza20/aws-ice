@@ -191,7 +191,10 @@ const ssmStateChangeRule = new events.Rule(
   }
 );
 
+const ssmDocumentName = "AWS-ICE-SCAP-Scan";
+
 const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDocument', {
+  name: ssmDocumentName,
   content: {
     schemaVersion: '2.2',
     description: 'OpenSCAP scan and report upload to S3',
@@ -221,22 +224,22 @@ const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDo
         name: 'mkdir_openSCAP',
         inputs: {
           runCommand: [
-            'if [ ! -d openscap ]; then mkdir openscap; fi'
+            "if [ ! -d openscap ]; then mkdir openscap; fi"
           ]
         }
       },
       {
         action: 'aws:runShellScript',
-        name: 'Install_OpenSCAP',
+        name: "Install_OpenSCAP",
         inputs: {
           runCommand: [
-            'cd openscap && sudo yum install -y openscap-scanner'
+            "cd openscap && sudo yum install -y openscap-scanner"
           ]
         }
       },
       {
         action: 'aws:runShellScript',
-        name: 'Install_scap_security_guide',
+        name: "Install_scap_security_guide",
         inputs: {
           runCommand: [
             'yes | sudo yum install -y scap-security-guide'
@@ -248,7 +251,7 @@ const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDo
         name: 'Fix_broken_link',
         inputs: {
           runCommand: [
-            'sudo sed -i \'s|https://www.redhat.com/security/data/oval/com.redhat.rhsa-RHEL7.xml.bz2|https://www.redhat.com/security/data/oval/v2/RHEL7/rhel-7.oval.xml.bz2|g\' /usr/share/xml/scap/ssg/content/ssg-amzn2-ds.xml'
+            "sudo sed -i 's|https://www.redhat.com/security/data/oval/com.redhat.rhsa-RHEL7.xml.bz2|https://www.redhat.com/security/data/oval/v2/RHEL7/rhel-7.oval.xml.bz2|g' /usr/share/xml/scap/ssg/content/ssg-amzn2-ds.xml"
           ]
         }
       },
@@ -257,7 +260,7 @@ const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDo
         name: 'Run_OpenSCAP',
         inputs: {
           runCommand: [
-            'cd openscap && oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_pci-dss --results /tmp/scap-results.xml --report /tmp/scap-results.html /usr/share/xml/scap/ssg/content/ssg-amzn2-ds.xml'
+            "oscap xccdf eval --profile {{Benchmark}} --fetch-remote-resources --results-arf arf.xml --report report.html /usr/share/xml/scap/ssg/content/{{OS}} || true"
           ]
         }
       },
@@ -266,7 +269,19 @@ const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDo
         name: 'Upload_S3',
         inputs: {
           runCommand: [
-            'aws s3 cp /tmp/scap-results.xml s3://${s3bucket}/results/ --region ${region}'
+            "INSTANCE_ID=$(ec2-metadata -i | cut -d ' ' -f 2)",
+            "DATE=$(date +'%Y-%m-%d')",
+            "aws configure set region {{region}}",
+            "aws s3 cp report.html s3://{{s3bucket}}/$INSTANCE_ID/$DATE/report.html"
+          ]
+        }
+      },
+      {
+        action: 'aws:runShellScript',
+        name: "Clean_up",
+        inputs: {
+          runCommand: [
+            "yes | sudo yum erase openscap-scanner"
           ]
         }
       }
