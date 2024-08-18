@@ -1,6 +1,5 @@
 import AWS from 'aws-sdk';
 import xml2js from 'xml2js';
-import { DOMParser } from 'xmldom';
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const cloudwatch = new AWS.CloudWatch();
@@ -38,11 +37,34 @@ exports.handler = async (event: any) => {
         const xml = data.Body?.toString('utf-8') || '';
         console.log("XML content retrieved");
 
-        const xmlfile = new DOMParser().parseFromString(xml);
+        const parser = new xml2js.Parser({ explicitArray: true });
+        const parsedXml = await parser.parseStringPromise(xml);
         console.log("XML parsed successfully");
 
-        // Adjust the path to match the actual XML structure
-        const ruleResults = xmlfile.querySelectorAll('rule-result');
+        // Navigate through the XML structure to find the 'rule-result' entries
+        const reports = parsedXml?.['arf:asset-report-collection']?.['arf:reports']?.[0]?.['arf:report'];
+
+        if (!reports) {
+            console.log("No 'report' found under 'arf:reports'. Parsed XML structure might be different.");
+            console.log("Keys under 'arf:asset-report-collection':", Object.keys(parsedXml['arf:asset-report-collection']));
+            throw new Error("Unable to locate 'report' in the parsed XML.");
+        }
+
+        let ruleResults: any[] = [];
+
+        reports.forEach((report: any) => {
+            const testResults = report?.['arf:content']?.[0]?.['TestResult'];
+
+            if (testResults && testResults[0] && testResults[0]['rule-result']) {
+                ruleResults = ruleResults.concat(testResults[0]['rule-result']);
+            }
+        });
+
+        if (ruleResults.length === 0) {
+            console.log("No 'rule-result' found in any 'TestResult'.");
+            return;
+        }
+
         const instanceId = fileKey.split('/')[0];
 
         let high = 0;
@@ -54,27 +76,26 @@ exports.handler = async (event: any) => {
         console.log("Starting loop");
 
         for (const item of ruleResults) {
-          const testId = item.getAttribute('idref') || '';
-          const time = item.getAttribute('time') || '';
-          const severity = item.getAttribute('severity') || '';
-          const result = item.querySelector('result')?.textContent || '';
-      
-          console.log("Test ID:", testId);
-      
-          if (result === "fail") {
-              saveToDynamoDB(dynamoDbItems, instanceId, testId, time, severity, result, bucketName, fileKey);
-      
-              if (severity === "high") {
-                  high++;
-              } else if (severity === "medium") {
-                  medium++;
-              } else if (severity === "low") {
-                  low++;
-              } else if (severity === "unknown") {
-                  unknown++;
-              }
-          }
-      }
+            const testId = item['$']?.['idref'];
+            console.log("Test ID:", testId);
+
+            const result = item['result']?.[0];
+            const severity = item['severity']?.[0]; 
+
+            if (result === "fail") {
+                saveToDynamoDB(dynamoDbItems, instanceId, item, bucketName, fileKey);
+
+                if (severity === "high") {
+                    high++;
+                } else if (severity === "medium") {
+                    medium++;
+                } else if (severity === "low") {
+                    low++;
+                } else if (severity === "unknown") {
+                    unknown++;
+                }
+            }
+        }
 
         sendMetric(high, 'SCAP High Finding', instanceId);
         sendMetric(medium, 'SCAP Medium Finding', instanceId);
@@ -96,15 +117,15 @@ exports.handler = async (event: any) => {
     }
 };
 
-function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, testId: string, time: string, severity: string, result: string, bucketName: string, fileKey: string) {
-  dynamoDbItems.push({
-      InstanceId: instanceId,
-      SCAP_Rule_Name: testId,
-      time: time,
-      severity: severity,
-      result: result,
-      report_url: `s3://${bucketName}/${fileKey.replace('.xml', '.html')}`
-  });
+function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item: any, bucketName: string, fileKey: string) {
+    dynamoDbItems.push({
+        InstanceId: instanceId,
+        SCAP_Rule_Name: item['$']?.['idref'] || 'unknown',
+        time: item['$']?.['time'] || 'unknown',
+        severity: item['$']?.['severity'] || 'unknown',
+        result: item['result']?.[0] || 'unknown',
+        report_url: `s3://${bucketName}/${fileKey.replace('.xml', '.html')}`
+    });
 }
 
 function sendMetric(value: number, title: string, instanceId: string) {
