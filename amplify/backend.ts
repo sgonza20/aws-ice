@@ -192,7 +192,7 @@ const ssmStateChangeRule = new events.Rule(
   }
 );
 
-const ssmDocumentName = "AWSICESCAP";
+const ssmDocumentName = "AWSICESCAPAGAIN";
 
 const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDocument', {
   name: ssmDocumentName,
