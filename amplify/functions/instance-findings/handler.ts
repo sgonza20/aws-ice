@@ -41,9 +41,8 @@ exports.handler = async (event: any) => {
         const result = await parser.parseStringPromise(xml);
         console.log("XML parsed successfully");
 
-        // Adjust this line according to your XML structure
-        const testResult = result['xccdf:TestResult'] || [];
-
+        // Adjust the path to match the actual XML structure
+        const ruleResults = result['TestResult']['rule-result'];
         const instanceId = fileKey.split('/')[0];
 
         let high = 0;
@@ -54,7 +53,7 @@ exports.handler = async (event: any) => {
         const dynamoDbItems: DynamoDBItem[] = [];
         console.log("Starting loop");
 
-        for (const item of testResult) {
+        for (const item of ruleResults) {
             const testId = item['$']['idref'];
             console.log("Test ID:", testId);
 
@@ -98,7 +97,7 @@ function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item:
         InstanceId: instanceId,
         SCAP_Rule_Name: item['$']['idref'],
         time: item['$']['time'],
-        severity: item['severity'][0],
+        severity: item['$']['severity'],
         result: item['result'][0],
         report_url: `s3://${bucketName}/${fileKey.replace('.xml', '.html')}`
     });
