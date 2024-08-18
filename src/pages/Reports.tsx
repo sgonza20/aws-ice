@@ -22,7 +22,7 @@ const mockFindings: Finding[] = [
 ];
 
 export default function Reports() {
-  const [findings, setFindings] = useState<Finding[]>(mockFindings);
+  const [findings] = useState<Finding[]>(mockFindings);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
 
   // Mock fetching function
