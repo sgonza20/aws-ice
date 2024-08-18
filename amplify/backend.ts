@@ -36,17 +36,12 @@ const scanStatusLambaArn = backend.scanStatus.resources.lambda.functionArn;
 const instanceFindingsLambdaArn = backend.instanceFindings.resources.lambda.functionArn;
 
 
+
 const customResourceStack = backend.createStack("AwsIceCustomResources");
 
 
-const kmsKey = new kms.Key(customResourceStack, "ScapS3KMS", {
-  enableKeyRotation: true,
-});
-
 const scapScanResultsBucket = new s3.Bucket(customResourceStack, "SCAPScanResultsBucket", {
   bucketName: "my-scap-scan-results-bucket-2024-11-01", 
-  encryption: s3.BucketEncryption.KMS,
-  encryptionKey: kmsKey,
   publicReadAccess: false,
   blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
 });
@@ -304,6 +299,7 @@ const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDo
   },
   documentType: 'Command',
 });
+
 
 
 
