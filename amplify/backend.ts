@@ -27,16 +27,9 @@ const customResourceStack = backend.createStack("AwsIceCustomResources");
 
 const instanceTableName = backend.data.resources.tables["Instance"].tableName;
 const instanceTableArn = backend.data.resources.tables["Instance"].tableArn;
+const findingsTableArn = backend.data.resources.tables["Finding"].tableArn;
 
-// Define the new DynamoDB table for findings
-const findingsTable = new dynamodb.Table(customResourceStack, "FindingsTable", {
-  tableName: "SCAP_Scan_Results-" + new Date().toISOString().split("T")[0]+ "-" + Math.floor(Math.random() * 1000000),
-  partitionKey: { name: "InstanceId", type: dynamodb.AttributeType.STRING },
-  sortKey: { name: "SCAP_Rule_Name", type: dynamodb.AttributeType.STRING },
-  billingMode: dynamodb.BillingMode.PROVISIONED,
-});
 
-const findingsTableArn = findingsTable.tableArn;
 
 const scapScanResultsBucket = new s3.Bucket(customResourceStack, "SCAPScanResultsBucket", {
   bucketName: "scap-scan-results" + new Date().toISOString().split("T")[0]+ "-" + Math.floor(Math.random() * 1000000), 
@@ -81,12 +74,12 @@ const instanceFindingsFunction = new NodejsFunction(
       new URL("./functions/instance-findings/handler.ts", import.meta.url)
     ),
     environment: {
-      FINDINGS_TABLE_NAME: findingsTable.tableName,
+      FINDINGS_TABLE_NAME: backend.data.resources.tables["Finding"].tableName,
       S3_BUCKET_NAME: scapScanResultsBucket.bucketName,
     },
     logRetention: logs.RetentionDays.ONE_MONTH,
     timeout: Duration.minutes(5),
-    memorySize: 512,
+    memorySize: 1024,
   }
 );
 
@@ -108,7 +101,12 @@ const dynamoPolicy = new iam.PolicyStatement({
     "dynamodb:GetRecords",
     "dynamodb:GetShardIterator",
   ],
-  resources: [instanceTableArn, instanceTableArn + "/*", findingsTableArn, findingsTableArn + "/*"],
+  resources: [
+    instanceTableArn,
+    instanceTableArn + "/*",
+    backend.data.resources.tables["Finding"].tableArn,
+    backend.data.resources.tables["Finding"].tableArn + "/*",
+  ],
 });
 const cloudwatchPolicy = new iam.PolicyStatement({
   sid: "CloudWatchAccess",
