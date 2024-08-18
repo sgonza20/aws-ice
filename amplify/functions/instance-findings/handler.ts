@@ -14,6 +14,8 @@ interface DynamoDBItem {
     severity: string;
     result: string;
     report_url: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 exports.handler = async (event: any) => {
@@ -117,13 +119,16 @@ exports.handler = async (event: any) => {
 };
 
 function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item: any, bucketName: string, fileKey: string) {
+  const currentTime = new Date().toISOString();
     dynamoDbItems.push({
         InstanceId: instanceId,
         SCAP_Rule_Name: item['$']?.['idref'] || 'unknown',
         time: item['$']?.['time'] || 'unknown',
         severity: item['$']?.['severity'] || 'unknown',
         result: item['result']?.[0] || 'unknown',
-        report_url: `s3://${bucketName}/${fileKey.replace('.xml', '.html')}`
+        report_url: `s3://${bucketName}/${fileKey.replace('.xml', '.html')}`,
+        createdAt: currentTime,
+        updatedAt: currentTime
     });
 }
 
