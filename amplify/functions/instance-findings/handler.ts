@@ -44,9 +44,11 @@ exports.handler = async (event: any) => {
         let unknown = 0;
 
         const dynamoDbItems: DynamoDBItem[] = [];
+        console.log("Starting loop")
 
         for (const item of testResult['item']) {
             const testId = item['$']['idref'];
+            console.log("Test ID:", testId);
 
             if (item['result'][0] === "fail") {
                 saveToDynamoDB(dynamoDbItems, instanceId, item, bucketName, fileKey);
