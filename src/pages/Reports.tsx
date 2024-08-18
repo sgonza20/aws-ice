@@ -51,7 +51,7 @@ export default function Reports() {
 
   return (
     <ContentLayout>
-      <Header variant="h1">Reports</Header>
+      <Header variant="h1"></Header>
       <Box margin={{ bottom: "l" }}>
         <Header variant="h2">Findings Overview</Header>
         <PieChart

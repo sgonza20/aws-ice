@@ -24,7 +24,7 @@ const schema = a.schema({
       Result: a.string(),
       Report_url: a.string(),
     })
-    .identifier(["SCAP_Rule_Name"])
+    .identifier(["InstanceId", "SCAP_Rule_Name"])
     .authorization((allow) => [allow.publicApiKey(), allow.authenticated()]),
   InstanceInformation: a.customType({
     InstanceId: a.string(),
