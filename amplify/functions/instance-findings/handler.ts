@@ -55,7 +55,7 @@ exports.handler = async (event: any) => {
         reports.forEach((report: any) => {
             const testResults = report?.['arf:content']?.[0]?.['TestResult'];
 
-            if (testResults && testResults[0] && testResults[0]['rule-result']) {
+            if (testResults?.[0]?.['rule-result']) {
                 ruleResults = ruleResults.concat(testResults[0]['rule-result']);
             }
         });
