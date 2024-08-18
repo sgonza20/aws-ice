@@ -77,7 +77,6 @@ exports.handler = async (event: any) => {
 
         for (const item of ruleResults) {
             const testId = item['$']?.['idref'];
-            console.log("Test ID:", testId);
 
             const result = item['result']?.[0];
             const severity = item['severity']?.[0]; 
