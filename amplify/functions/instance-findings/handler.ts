@@ -53,7 +53,7 @@ exports.handler = async (event: any) => {
         const dynamoDbItems: DynamoDBItem[] = [];
         console.log("Starting loop");
 
-        for (const item of testResult['item']) {
+        for (const item of testResult) {
             const testId = item['$']['idref'];
             console.log("Test ID:", testId);
 
