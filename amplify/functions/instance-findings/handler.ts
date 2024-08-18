@@ -42,6 +42,7 @@ exports.handler = async (event: any) => {
         console.log("XML parsed successfully");
 
         const testResult = result['xccdf:TestResult'];
+        console.log("testResult structure:", JSON.stringify(testResult, null, 2));
         const instanceId = fileKey.split('/')[0];
 
         let high = 0;
