@@ -5,7 +5,7 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const cloudwatch = new AWS.CloudWatch();
 const s3 = new AWS.S3();
 
-const TABLE_NAME = process.env.TABLE_NAME!;
+const TABLE_NAME = process.env.FINDINGS_TABLE_NAME!;
 
 interface DynamoDBItem {
     InstanceId: string;
@@ -77,12 +77,11 @@ exports.handler = async (event: any) => {
 
         for (const item of ruleResults) {
             const testId = item['$']?.['idref'];
-            console.log("Test ID:", testId);
 
             const result = item['result']?.[0];
             const severity = item['severity']?.[0]; 
 
-            if (result === "fail") {
+            if (result === "fail" || result === "pass") {
                 saveToDynamoDB(dynamoDbItems, instanceId, item, bucketName, fileKey);
 
                 if (severity === "high") {

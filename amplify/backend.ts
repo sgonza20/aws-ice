@@ -1,13 +1,11 @@
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { defineBackend } from '@aws-amplify/backend';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
 import * as iam from "aws-cdk-lib/aws-iam";
 import { describeInstances } from "./functions/describe-instances/resource";
 import { invokeSSM } from './functions/invoke-ssm/resource';
-import { scanStatus } from './functions/scan-status/resource';
-import { instanceFindings } from './functions/instance-findings/resource';
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
-import * as destinations from "aws-cdk-lib/aws-logs-destinations";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
@@ -15,37 +13,35 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as url from "url";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3Notifications from "aws-cdk-lib/aws-s3-notifications";
-import * as kms from "aws-cdk-lib/aws-kms";
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+
 
 const backend = defineBackend({
   auth,
   data,
   describeInstances,
-  invokeSSM,
-  scanStatus,
-  instanceFindings
+  invokeSSM
 });
+const customResourceStack = backend.createStack("AwsIceCustomResources");
 
 const instanceTableName = backend.data.resources.tables["Instance"].tableName;
 const instanceTableArn = backend.data.resources.tables["Instance"].tableArn;
-const findingsTableName = backend.data.resources.tables["Finding"].tableName;
-const findingsTableArn = backend.data.resources.tables["Finding"].tableArn;
 
-const scanStatusLambaArn = backend.scanStatus.resources.lambda.functionArn;
-const instanceFindingsLambdaArn = backend.instanceFindings.resources.lambda.functionArn;
+// Define the new DynamoDB table for findings
+const findingsTable = new dynamodb.Table(customResourceStack, "FindingsTable", {
+  tableName: "SCAP_Scan_Results-" + new Date().toISOString().split("T")[0]+ "-" + Math.floor(Math.random() * 1000000),
+  partitionKey: { name: "InstanceId", type: dynamodb.AttributeType.STRING },
+  sortKey: { name: "SCAP_Rule_Name", type: dynamodb.AttributeType.STRING },
+  billingMode: dynamodb.BillingMode.PROVISIONED,
+});
 
-
-
-const customResourceStack = backend.createStack("AwsIceCustomResources");
-
+const findingsTableArn = findingsTable.tableArn;
 
 const scapScanResultsBucket = new s3.Bucket(customResourceStack, "SCAPScanResultsBucket", {
-  bucketName: "my-scap-scan-results-bucket-2024-11-01", 
+  bucketName: "scap-scan-results" + new Date().toISOString().split("T")[0]+ "-" + Math.floor(Math.random() * 1000000), 
   publicReadAccess: false,
   blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
 });
-
 
 const cfnUserPool = backend.auth.resources.cfnResources.cfnUserPool;
 cfnUserPool.adminCreateUserConfig = {
@@ -84,14 +80,15 @@ const instanceFindingsFunction = new NodejsFunction(
       new URL("./functions/instance-findings/handler.ts", import.meta.url)
     ),
     environment: {
-      FINDINGS_TABLE_NAME: findingsTableName,
+      FINDINGS_TABLE_NAME: findingsTable.tableName,
       S3_BUCKET_NAME: scapScanResultsBucket.bucketName,
     },
     logRetention: logs.RetentionDays.ONE_MONTH,
   }
 );
 
-const readWriteToInstanceTableStatement = new iam.PolicyStatement({
+// IAM policy for DynamoDB access
+const dynamoPolicy = new iam.PolicyStatement({
   sid: "DynamoDBAccess",
   effect: iam.Effect.ALLOW,
   actions: [
@@ -108,24 +105,17 @@ const readWriteToInstanceTableStatement = new iam.PolicyStatement({
     "dynamodb:GetRecords",
     "dynamodb:GetShardIterator",
   ],
-  resources: [instanceTableArn, instanceTableArn + "/*"],
+  resources: [instanceTableArn, instanceTableArn + "/*", findingsTableArn, findingsTableArn + "/*"],
 });
-scanStatusFunction.addToRolePolicy(readWriteToInstanceTableStatement);
-instanceFindingsFunction.addToRolePolicy(readWriteToInstanceTableStatement);
-
-new logs.SubscriptionFilter(
-  customResourceStack,
-  "AwsIceTrailSubscriptionFilter",
-  {
-    logGroup: logGroup,
-    filterPattern: logs.FilterPattern.stringValue(
-      "$.userIdentity.userName",
-      "=",
-      "devops-admin-*"
-    ),
-    destination: new destinations.LambdaDestination(scanStatusFunction),
-  }
-);
+const cloudwatchPolicy = new iam.PolicyStatement({
+  sid: "CloudWatchAccess",
+  effect: iam.Effect.ALLOW,
+  actions: ["cloudwatch:PutMetricData"],
+  resources: ["*"],
+})
+scanStatusFunction.addToRolePolicy(dynamoPolicy);
+instanceFindingsFunction.addToRolePolicy(dynamoPolicy);
+instanceFindingsFunction.addToRolePolicy(cloudwatchPolicy);
 
 const ssmPolicy = new iam.PolicyStatement({
   sid: "SSM",
@@ -183,8 +173,6 @@ const s3InvokeLambdaPolicy = new iam.PolicyStatement({
 });
 
 scapScanResultsBucket.addToResourcePolicy(s3InvokeLambdaPolicy);
-
-
 
 // Define the CloudWatch Rule to listen for SSM Command state changes
 const ssmStateChangeRule = new events.Rule(
@@ -266,40 +254,23 @@ const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDo
       },
       {
         action: 'aws:runShellScript',
-        name: 'Run_OpenSCAP_scan',
+        name: 'Run_OpenSCAP',
         inputs: {
           runCommand: [
-            'oscap xccdf eval --profile {{Benchmark}} --fetch-remote-resources --results-arf arf.xml --report report.html /usr/share/xml/scap/ssg/content/{{OS}} || true'
+            'cd openscap && oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_pci-dss --results /tmp/scap-results.xml --report /tmp/scap-results.html /usr/share/xml/scap/ssg/content/ssg-amzn2-ds.xml'
           ]
         }
       },
       {
         action: 'aws:runShellScript',
-        name: 'Upload_report_to_S3',
+        name: 'Upload_S3',
         inputs: {
           runCommand: [
-            'INSTANCE_ID=$(ec2-metadata -i | cut -d \' \' -f 2)',
-            'DATE=$(date +\'%Y-%m-%d\')',
-            'aws configure set region {{region}}',
-            'aws s3 cp report.html s3://{{s3bucket}}/$INSTANCE_ID/$DATE/report.html',
-            'aws s3 cp arf.xml s3://{{s3bucket}}/$INSTANCE_ID/$DATE/arf.xml'
-          ]
-        }
-      },
-      {
-        action: 'aws:runShellScript',
-        name: 'Clean_up',
-        inputs: {
-          runCommand: [
-            'yes | sudo yum erase openscap-scanner'
+            'aws s3 cp /tmp/scap-results.xml s3://${s3bucket}/results/ --region ${region}'
           ]
         }
       }
     ]
   },
-  documentType: 'Command',
+  documentType: 'Command'
 });
-
-
-
-
