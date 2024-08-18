@@ -24,16 +24,22 @@ exports.handler = async (event: any) => {
     const fileKey = decodeURIComponent(record.object.key.replace(/\+/g, " "));
 
     try {
+        console.log("Attempting to get S3 object", { bucketName, fileKey });
+
         const params = {
             Bucket: bucketName,
             Key: fileKey
         };
 
         const data = await s3.getObject(params).promise();
+        console.log("S3 object retrieved successfully");
+
         const xml = data.Body?.toString('utf-8') || '';
+        console.log("XML content retrieved");
 
         const parser = new xml2js.Parser();
         const result = await parser.parseStringPromise(xml);
+        console.log("XML parsed successfully");
 
         const testResult = result['xccdf:TestResult'];
         const instanceId = fileKey.split('/')[0];
@@ -44,7 +50,7 @@ exports.handler = async (event: any) => {
         let unknown = 0;
 
         const dynamoDbItems: DynamoDBItem[] = [];
-        console.log("Starting loop")
+        console.log("Starting loop");
 
         for (const item of testResult['item']) {
             const testId = item['$']['idref'];
@@ -83,7 +89,7 @@ exports.handler = async (event: any) => {
     } catch (error) {
         console.error("Error processing S3 object or DynamoDB operation:", error);
     }
-}
+};
 
 function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item: any, bucketName: string, fileKey: string) {
     dynamoDbItems.push({
