@@ -20,7 +20,7 @@ const schema = a.schema({
       InstanceId: a.string().required(),
       SCAP_Rule_Name: a.string().required(),
       Time: a.string(),
-      Severity: a.enum(["High", "Medium", "Low", "Unknown"]),
+      Severity: a.enum(["high", "medium", "low", "unknown"]),
       Result: a.string(),
       Report_url: a.string(),
     })
