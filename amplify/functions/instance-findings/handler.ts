@@ -10,10 +10,10 @@ const TABLE_NAME = process.env.FINDINGS_TABLE_NAME!;
 interface DynamoDBItem {
     InstanceId: string;
     SCAP_Rule_Name: string;
-    time: string;
-    severity: string;
-    result: string;
-    report_url: string;
+    Time: string;
+    Severity: string;
+    Result: string;
+    Report_url: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -123,10 +123,10 @@ function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item:
     dynamoDbItems.push({
         InstanceId: instanceId,
         SCAP_Rule_Name: item['$']?.['idref'] || 'unknown',
-        time: item['$']?.['time'] || 'unknown',
-        severity: item['$']?.['severity'] || 'unknown',
-        result: item['result']?.[0] || 'unknown',
-        report_url: `s3://${bucketName}/${fileKey.replace('.xml', '.html')}`,
+        Time: item['$']?.['time'] || 'unknown',
+        Severity: item['$']?.['severity'] || 'unknown',
+        Result: item['result']?.[0] || 'unknown',
+        Report_url: `s3://${bucketName}/${fileKey.replace('.xml', '.html')}`,
         createdAt: currentTime,
         updatedAt: currentTime
     });
