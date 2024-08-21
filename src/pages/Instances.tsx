@@ -38,12 +38,15 @@ export default function EC2Instances() {
   useEffect(() => {
     fetchInstances();
     const subscription = client.models.Instance.observeQuery().subscribe({
-      next: (data) => setInstances([...data.items])
+      next: (data) => {
+        setInstances(data.items);
+      },
+      error: (error) => console.error("Subscription error:", error),
     });
-    return () => {
-      subscription.unsubscribe(); // Clean up subscription on component unmount
-    };
   
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function fetchInstances() {
@@ -75,6 +78,12 @@ export default function EC2Instances() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function deleteInstance(InstanceID: string){
+
+    client.models.Instance.delete({InstanceId: InstanceID});
+  
   }
 
   async function InvokeScan(InstanceID: string, DocumentName: string, OS: string, Benchmark: string) {
@@ -115,6 +124,9 @@ export default function EC2Instances() {
 
   function confirmDelete() {
     setIsDeleteModalVisible(false);
+    selectedInstances.forEach((item) =>
+    deleteInstance(item.InstanceId)
+    );
   }
 
   const isOption = (option: any): option is Option => 
@@ -265,28 +277,28 @@ export default function EC2Instances() {
               />
             </FormField>
             <FormField label="Select Benchmark">
-              <Select
-                selectedOption={selectedBenchmark}
-                onChange={({ detail }) => {
+            <Select
+              selectedOption={selectedBenchmark}
+              onChange={({ detail }) => {
                   if (isOption(detail.selectedOption)) {
                     setSelectedBenchmark(detail.selectedOption);
                   }
                 }}
                 options={[
-                  { label: "DISA STIG", value: "xccdf_org.ssgproject.content_profile_stig-rhel7-disa" },
-                  { label: "C2S", value: "xccdf_org.ssgproject.content_profile_C2S" },
-                  { label: "CSCF RHEL6 MLS Core Baseline", value: "xccdf_org.ssgproject.content_profile_CSCF-RHEL6-MLS" },
-                  { label: "PCI-DSS v3 Control Baseline", value: "xccdf_org.ssgproject.content_profile_pci-dss" },
-                  { label: "Standard System Security", value: "xccdf_org.ssgproject.content_profile_standard" },
-                  { label: "United States Government Configuration Baseline (USGCB)", value: "xccdf_org.ssgproject.content_profile_usgcb-rhel6-server" },
-                  { label: "Server Baseline", value: "xccdf_org.ssgproject.content_profile_server" },
-                  { label: "Red Hat Corporate Profile for Certified Cloud Providers (RH CCP)", value: "xccdf_org.ssgproject.content_profile_rht-ccp" },
-                  { label: "CNSSI 1253 Low/Low/Low Control Baseline", value: "xccdf_org.ssgproject.content_profile_nist-CL-IL-AL" },
-                  { label: "FTP Server Profile (vsftpd)", value: "xccdf_org.ssgproject.content_profile_ftp-server" },
-                  { label: "FISMA Medium", value: "xccdf_org.ssgproject.content_profile_fisma-medium-rhel6-server" },
-                  { label: "Desktop Baseline", value: "xccdf_org.ssgproject.content_profile_desktop" },
-                ]}
-              />
+                { label: "DISA STIG", value: "xccdf_org.ssgproject.content_profile_stig-rhel7-disa" },
+                { label: "C2S", value: "xccdf_org.ssgproject.content_profile_C2S" },
+                { label: "CSCF RHEL6 MLS Core Baseline", value: "xccdf_org.ssgproject.content_profile_CSCF-RHEL6-MLS" },
+                { label: "PCI-DSS v3 Control Baseline", value: "xccdf_org.ssgproject.content_profile_pci-dss" },
+                { label: "Standard System Security", value: "xccdf_org.ssgproject.content_profile_standard" },
+                { label: "United States Government Configuration Baseline (USGCB)", value: "xccdf_org.ssgproject.content_profile_usgcb-rhel6-server" },
+                { label: "Server Baseline", value: "xccdf_org.ssgproject.content_profile_server" },
+                { label: "Red Hat Corporate Profile for Certified Cloud Providers (RH CCP)", value: "xccdf_org.ssgproject.content_profile_rht-ccp" },
+                { label: "CNSSI 1253 Low/Low/Low Control Baseline", value: "xccdf_org.ssgproject.content_profile_nist-CL-IL-AL" },
+                { label: "FTP Server Profile (vsftpd)", value: "xccdf_org.ssgproject.content_profile_ftp-server" },
+                { label: "FISMA Medium", value: "xccdf_org.ssgproject.content_profile_fisma-medium-rhel6-server" },
+                { label: "Desktop Baseline", value: "xccdf_org.ssgproject.content_profile_desktop" },
+              ]}
+            />
             </FormField>
           </Form>
         </Box>
