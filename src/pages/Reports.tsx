@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import {
-  Box,
   ContentLayout,
   Header,
   Table,
-  StatusIndicator,
   Pagination,
-  PieChart,
 } from "@cloudscape-design/components";
+import { Schema } from "../../amplify/data/resource";
+import { generateClient } from "aws-amplify/data";
 
 interface Finding {
   instanceId: string;
@@ -15,122 +14,82 @@ interface Finding {
   totalPassed: number;
 }
 
-const mockFindings: Finding[] = [
-  { instanceId: "i-1234567890abcdef0", totalFailed: 5, totalPassed: 10 },
-  { instanceId: "i-0abcdef1234567890", totalFailed: 2, totalPassed: 12 },
-  // Add more mock data as needed
-];
+const client = generateClient<Schema>();
 
 export default function Reports() {
-  const [findings] = useState<Finding[]>(mockFindings);
+  const [findings, setFindings] = useState<Finding[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
+  const itemsPerPage = 10;
 
-  // Mock fetching function
+  async function fetchFindings() {
+    try {
+      const { data, errors } = await client.models.Finding.list({
+        limit: 1000,
+      });
+
+      if (errors) {
+        console.error("Error fetching findings:", errors);
+        return;
+      }
+
+      // Aggregate findings per instance
+      const findingsAggregated: Record<string, Finding> = {};
+
+      data.forEach((finding) => {
+        const InstanceId = finding.InstanceId as string;
+        const Result = finding.Result as string;
+
+        if (!findingsAggregated[InstanceId]) {
+          findingsAggregated[InstanceId] = {
+            instanceId: InstanceId,
+            totalFailed: 0,
+            totalPassed: 0,
+          };
+        }
+
+        if (Result === "fail") {
+          findingsAggregated[InstanceId].totalFailed += 1;
+        } else if (Result === "pass") {
+          findingsAggregated[InstanceId].totalPassed += 1;
+        }
+      });
+
+      setFindings(Object.values(findingsAggregated));
+    } catch (error) {
+      console.error("Error fetching findings:", error);
+    }
+  }
+
   useEffect(() => {
-    // Fetch findings data from an API or other source here
-    // setFindings(fetchedData);
+    fetchFindings();
   }, []);
 
-  // Calculate totals
-  const totalFailed = findings.reduce((sum, finding) => sum + finding.totalFailed, 0);
-  const totalPassed = findings.reduce((sum, finding) => sum + finding.totalPassed, 0);
+  const handlePaginationChange = ({ detail }: { detail: { currentPageIndex: number } }) => {
+    setCurrentPageIndex(detail.currentPageIndex);
+  };
 
-  // Data for the PieChart
-  const pieChartData = [
-    {
-      title: "Failed Findings",
-      value: totalFailed,
-      lastUpdate: new Date().toLocaleDateString()
-    },
-    {
-      title: "Passed Findings",
-      value: totalPassed,
-      lastUpdate: new Date().toLocaleDateString()
-    }
-  ];
+  const paginatedFindings = findings.slice(
+    (currentPageIndex - 1) * itemsPerPage,
+    currentPageIndex * itemsPerPage
+  );
 
   return (
     <ContentLayout>
-      <Header variant="h1"></Header>
-      <Box margin={{ bottom: "l" }}>
-        <Header variant="h2">Findings Overview</Header>
-        <PieChart
-          data={pieChartData}
-          detailPopoverContent={(datum, sum) => [
-            { key: "Count", value: datum.value },
-            {
-              key: "Percentage",
-              value: `${((datum.value / sum) * 100).toFixed(0)}%`
-            },
-            { key: "Last update on", value: datum.lastUpdate }
-          ]}
-          segmentDescription={(datum, sum) =>
-            `${datum.value} findings, ${((datum.value / sum) * 100).toFixed(0)}%`
-          }
-          ariaDescription="Pie chart showing the distribution of failed and passed findings."
-          ariaLabel="Pie chart"
-          empty={
-            <Box textAlign="center" color="inherit">
-              <b>No data available</b>
-              <Box variant="p" color="inherit">
-                There is no data available
-              </Box>
-            </Box>
-          }
-          noMatch={
-            <Box textAlign="center" color="inherit">
-              <b>No matching data</b>
-              <Box variant="p" color="inherit">
-                There is no matching data to display
-              </Box>
-            </Box>
-          }
-        />
-      </Box>
+      <Header>Reports</Header>
       <Table
         columnDefinitions={[
-          {
-            id: "instanceId",
-            header: "Instance ID",
-            cell: (item: Finding) => item.instanceId,
-            isRowHeader: true,
-          },
-          {
-            id: "totalFailed",
-            header: "Failed Findings",
-            cell: (item: Finding) => (
-              <StatusIndicator type={item.totalFailed > 0 ? "error" : "success"}>
-                {item.totalFailed}
-              </StatusIndicator>
-            ),
-          },
-          {
-            id: "totalPassed",
-            header: "Passed Findings",
-            cell: (item: Finding) => (
-              <StatusIndicator type={item.totalPassed > 0 ? "success" : "error"}>
-                {item.totalPassed}
-              </StatusIndicator>
-            ),
-          },
+          { id: "instanceId", header: "Instance ID", cell: (item) => item.instanceId },
+          { id: "totalPassed", header: "Total Passed", cell: (item) => item.totalPassed },
+          { id: "totalFailed", header: "Total Failed", cell: (item) => item.totalFailed },
         ]}
-        items={findings}
+        items={paginatedFindings}
         pagination={
           <Pagination
             currentPageIndex={currentPageIndex}
-            onChange={({ detail }) => setCurrentPageIndex(detail.currentPageIndex)}
-            pagesCount={Math.ceil(findings.length / 10)}
+            onChange={handlePaginationChange}
+            pagesCount={Math.ceil(findings.length / itemsPerPage)}
           />
         }
-        empty={
-          <Box margin={{ vertical: "xs" }} textAlign="center" color="inherit">
-            <b>No Findings Available</b>
-          </Box>
-        }
-        variant="full-page"
-        stickyHeader={true}
-        resizableColumns={true}
-        loadingText="Loading findings"
       />
     </ContentLayout>
   );
