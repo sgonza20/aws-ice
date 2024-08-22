@@ -126,7 +126,7 @@ export default function Home() {
     <ContentLayout>
       <SpaceBetween size="l">
         <Box textAlign="center">
-          <img src="./src/components/Images/openscap-horizontal.png" alt="OpenSCAP Logo" style={{ width: "400px" }} />
+          <img src="https://github.com/sgonza20/aws-ice/blob/main/src/components/Images/openscap-horizontal.png" alt="OpenSCAP Logo" style={{ width: "400px" }} />
         </Box>
         <Container>
           <Header variant="h2">Overview</Header>
