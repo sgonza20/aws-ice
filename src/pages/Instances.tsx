@@ -111,7 +111,7 @@ export default function EC2Instances() {
   function confirmScan() {
     if (selectedOS && selectedBenchmark) {
       selectedInstances.forEach((item) =>
-        InvokeScan(item.InstanceId,"AWSICESCAPAGAIN12", selectedOS.value, selectedBenchmark.value)
+        InvokeScan(item.InstanceId,"AWSICESCAPAGAIN122", selectedOS.value, selectedBenchmark.value)
       );
       console.log(selectedInstances);
       setSelectedInstances([]);
