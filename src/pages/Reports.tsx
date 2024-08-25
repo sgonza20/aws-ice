@@ -133,14 +133,14 @@ export default function Reports() {
           },
           { 
             id: "reportUrl",
-            header: "Download Report",
+            header: "View Report",
             cell: (item) => (
               <Button
                 href={item.Report_url}
                 target="_blank"
                 variant="link"
               >
-                Download
+                View
               </Button>
             ),
           },

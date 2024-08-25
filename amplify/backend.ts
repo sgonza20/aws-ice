@@ -289,7 +289,7 @@ const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDo
             "INSTANCE_ID=$(ec2-metadata -i | cut -d ' ' -f 2)",
             "DATE=$(date +'%Y-%m-%d')",
             "aws configure set region {{region}}",
-            "aws s3 cp report.html s3://{{s3bucket}}/$INSTANCE_ID/$DATE/report.html",
+            "aws s3 cp report.html s3://{{s3bucket}}/$INSTANCE_ID/$DATE/arf.html",
             "aws s3 cp arf.xml s3://{{s3bucket}}/$INSTANCE_ID/$DATE/arf.xml"
           ]
         }
