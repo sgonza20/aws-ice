@@ -88,7 +88,7 @@
   );
   
   instanceFindingsFunction.addEventSource(new lambdaEventSources.SqsEventSource(findingsQueue, {
-    batchSize: 1,
+    batchSize: 10,
   }));
 
   const sqsPolicy = new iam.PolicyStatement({
