@@ -164,7 +164,7 @@ async function generatePresignedUrl(bucketName: string, key: string) {
 }
 
 function extractBenchmark(parsedXml: any): string {
-    const benchmark = parsedXml?.['arf:asset-report-collection']?.['arf:report']?.[0]?.['arf:content']?.[0]?.['TestResult']?.[0]?.['benchmark']?.[0]?.['$']?.['id'];
+    const benchmark = parsedXml?.['arf:content']?.[0]?.['TestResult']?.[0]?.['benchmark']['idref']?.[0]
     return benchmark || 'Unknown Benchmark';
 }
 
