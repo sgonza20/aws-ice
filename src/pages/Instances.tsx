@@ -15,6 +15,7 @@ import {
   FormField,
   Select
 } from "@cloudscape-design/components";
+import TextFilter from "@cloudscape-design/components/text-filter";
 import { Schema } from "../../amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
 
@@ -33,7 +34,10 @@ export default function EC2Instances() {
   const [selectedOS, setSelectedOS] = useState<Option | null>(null);
   const [selectedBenchmark, setSelectedBenchmark] = useState<Option | null>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filteringText, setFilteringText] = useState('');
+  const itemsPerPage = 10;
+
 
   useEffect(() => {
     syncInstances();
@@ -178,6 +182,16 @@ export default function EC2Instances() {
   const isOption = (option: any): option is Option => 
     typeof option.label === 'string' && typeof option.value === 'string';
 
+  const filteredInstances = instances.filter(instance =>
+    instance.InstanceId.toLowerCase().includes(filteringText.toLowerCase())
+  );
+
+  const paginatedInstances = filteredInstances.slice(
+    (currentPageIndex - 1) * itemsPerPage,
+    currentPageIndex * itemsPerPage
+  );
+    
+
   return (
     <ContentLayout>
       <Header
@@ -212,6 +226,14 @@ export default function EC2Instances() {
       >
         Instances ({instances.length})
       </Header>
+      <FormField label="Search by Instance ID">
+        <TextFilter
+          filteringText={filteringText}
+          filteringPlaceholder="Find instances"
+          filteringAriaLabel="Filter instances"
+          onChange={({ detail }) => setFilteringText(detail.filteringText)}
+        />
+      </FormField>
       <Table
         columnDefinitions={[
           {
@@ -245,14 +267,14 @@ export default function EC2Instances() {
             ),
           },
         ]}
-        items={instances}
+        items={paginatedInstances}
         selectedItems={selectedInstances}
         onSelectionChange={({ detail }) => setSelectedInstances(detail.selectedItems)}
         pagination={
           <Pagination
             currentPageIndex={currentPageIndex}
             onChange={({ detail }) => setCurrentPageIndex(detail.currentPageIndex)}
-            pagesCount={Math.ceil(instances.length / 10)}
+            pagesCount={Math.ceil(filteredInstances.length / 10)}
           />
         }
         empty={

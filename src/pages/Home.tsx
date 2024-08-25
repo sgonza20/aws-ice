@@ -319,41 +319,6 @@ export default function Home() {
                 },
               },
               {
-                id: "3",
-                rowSpan: 3,
-                columnSpan: 4,
-                data: {
-                  title: "Scheduled Scans",
-                  content: (
-                    <Table
-                      columnDefinitions={[
-                        {
-                          id: "instanceId",
-                          header: "Instance ID",
-                          cell: (item) => item.InstanceId,
-                          isRowHeader: true,
-                        },
-                        {
-                          id: "lastScanTime",
-                          header: "Scan Time",
-                          cell: (item) => item.LastScanTime ? new Date(item.LastScanTime).toLocaleString() : 'N/A',
-                        },
-                        {
-                          id: "scanStatus",
-                          header: "Scan Status",
-                          cell: (item) => (
-                            <StatusIndicator type={item.ScanStatus === 'Success' ? 'success' : item.ScanStatus === 'Failed' ? 'error' : 'info'}>
-                              {item.ScanStatus || 'N/A'}
-                            </StatusIndicator>
-                          ),
-                        },
-                      ]}
-                      items={instances}
-                    />
-                  ),
-                },
-              },
-              {
                 id: "4",
                 rowSpan: 3,
                 columnSpan: 4,

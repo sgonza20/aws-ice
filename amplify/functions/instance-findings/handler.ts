@@ -6,6 +6,7 @@ const cloudwatch = new AWS.CloudWatch();
 const s3 = new AWS.S3();
 
 const TABLE_NAME = process.env.FINDINGS_TABLE_NAME!;
+const SIGNED_URL_EXPIRATION = 3600; 
 
 interface DynamoDBItem {
     InstanceId: string;
@@ -89,7 +90,10 @@ export const handler = async (event: any) => {
                     const severity = item['severity']?.[0]; 
 
                     if (result === "fail" || result === "pass") {
-                        saveToDynamoDB(dynamoDbItems, instanceId, item, bucketName, fileKey);
+
+                        const reportUrl = await generatePresignedUrl(bucketName, fileKey.replace('.xml', '.html'));
+
+                        saveToDynamoDB(dynamoDbItems, instanceId, item, reportUrl);
 
                         if (severity === "high") {
                             high++;
@@ -129,7 +133,7 @@ export const handler = async (event: any) => {
     }
 };
 
-function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item: any, bucketName: string, fileKey: string) {
+function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item: any, reportUrl: string) {
     const currentTime = new Date().toISOString();
     dynamoDbItems.push({
         InstanceId: instanceId,
@@ -137,10 +141,25 @@ function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item:
         Time: item['$']?.['time'] || 'unknown',
         Severity: item['$']?.['severity'] || 'unknown',
         Result: item['result']?.[0] || 'unknown',
-        Report_url: `s3://${bucketName}/${fileKey.replace('.xml', '.html')}`,
+        Report_url: reportUrl,
         createdAt: currentTime,
         updatedAt: currentTime
     });
+}
+
+async function generatePresignedUrl(bucketName: string, key: string) {
+    try {
+        const params = {
+            Bucket: bucketName,
+            Key: key,
+            Expires: SIGNED_URL_EXPIRATION 
+        };
+        const url = s3.getSignedUrlPromise('getObject', params);
+        return url;
+    } catch (error) {
+        console.error("Error generating pre-signed URL:", error);
+        throw error;
+    }
 }
 
 function sendMetric(value: number, title: string, instanceId: string) {
