@@ -57,7 +57,7 @@ export default function Home() {
     },
   ];
 
-  async function fetchInstances() {
+  async function getInstances() {
     try {
       const { data, errors } = await client.queries.GetInstances();
 
@@ -72,13 +72,56 @@ export default function Home() {
         data.forEach(async (instance) => {
           await client.models.Instance.create({
             InstanceId: instance?.InstanceId!,
+            CommandId: instance?.CommandId,
+            PlatformName: instance?.PlatformName,
+            PlatformType: instance?.PlatformType,
             LastScanTime: instance?.LastScanTime,
             ScanStatus: instance?.ScanStatus,
           });
         });
       }
+      return data;
     } catch (error) {
       console.error("Error fetching instances:", error);
+      return [];
+    }
+  }
+
+    async function syncInstances() {
+    try {
+      const fetchedInstances = await getInstances();
+      if (!fetchedInstances) {
+        console.error("Error fetching instances:", "No instances found");
+        return;
+      }
+      const instanceIds = fetchedInstances.map((instance) => instance?.InstanceId);
+      
+      const { data, errors } = await client.models.Instance.list();
+
+      if (errors) {
+        console.error("Error fetching local instances:", errors);
+        return;
+      }
+
+      const existingInstances = data.filter(instance => instanceIds.includes(instance.InstanceId));
+      
+      setInstances(existingInstances);
+
+      const newInstances = fetchedInstances.filter(instance => !existingInstances.some(existing => existing.InstanceId === instance?.InstanceId));
+
+      for (const instance of newInstances) {
+        await client.models.Instance.create({
+          InstanceId: instance?.InstanceId!,
+          CommandId: instance?.CommandId,
+          PlatformName: instance?.PlatformName,
+          PlatformType: instance?.PlatformType,
+          LastScanTime: instance?.LastScanTime,
+          ScanStatus: instance?.ScanStatus,
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing instances:", error);
+    } finally {
     }
   }
   
@@ -129,7 +172,7 @@ export default function Home() {
 
   // Update scans periodically
   useEffect(() => {
-    fetchInstances();
+    syncInstances();
     fetchFindings();
     const subscription = client.models.Instance.observeQuery().subscribe({
       next: (data) => {
