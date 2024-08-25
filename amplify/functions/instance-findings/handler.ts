@@ -21,10 +21,13 @@ interface DynamoDBItem {
 export const handler = async (event: any) => {
     console.log("Event received:", JSON.stringify(event, null, 2));
 
-    for (const sqsRecord of event.Records) {
+    // Process the first SQS record in the event
+    if (event.Records && event.Records.length > 0) {
+        const sqsRecord = event.Records[0];
         const s3Event = JSON.parse(sqsRecord.body);
-        
-        for (const record of s3Event.Records) {
+
+        if (s3Event.Records && s3Event.Records.length > 0) {
+            const record = s3Event.Records[0];
             const bucketName = record.s3.bucket.name;
             const fileKey = decodeURIComponent(record.s3.object.key.replace(/\+/g, " "));
 
@@ -118,7 +121,11 @@ export const handler = async (event: any) => {
             } catch (error) {
                 console.error("Error processing S3 object or DynamoDB operation:", error);
             }
+        } else {
+            console.error("No S3 records found in S3 event.");
         }
+    } else {
+        console.error("No SQS records found in event.");
     }
 };
 
