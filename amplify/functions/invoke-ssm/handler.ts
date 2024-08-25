@@ -2,6 +2,8 @@ import {
   SSMClient,
   SendCommandCommand,
   SendCommandCommandOutput,
+  GetParameterCommand,
+  GetParameterCommandOutput,
 } from "@aws-sdk/client-ssm";
 import type { Schema } from "../../data/resource";
 
@@ -10,7 +12,13 @@ const ssmClient = new SSMClient();
 export const handler: Schema["InvokeSSM"]["functionHandler"] = async (
   event: any
 ) => {
-  const { InstanceId, DocumentName, OS, Benchmark } = event.arguments;
+  const { InstanceId, OS, Benchmark } = event.arguments;
+
+  const parameterName = "/my-app/parameter-name";
+  const getParameterCommand = new GetParameterCommand({ Name: parameterName });
+  const getParameterResponse: GetParameterCommandOutput = await ssmClient.send(getParameterCommand);
+  const DocumentName = getParameterResponse.Parameter?.Value;
+
 
   if (!InstanceId) {
     return {

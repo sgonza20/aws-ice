@@ -86,10 +86,9 @@ export default function EC2Instances() {
   
   }
 
-  async function InvokeScan(InstanceID: string, DocumentName: string, OS: string, Benchmark: string) {
+  async function InvokeScan(InstanceID: string,OS: string, Benchmark: string) {
     const { data, errors } = await client.queries.InvokeSSM({
       InstanceId: InstanceID,
-      DocumentName: DocumentName,
       OS: OS,
       Benchmark: Benchmark
     });
@@ -111,7 +110,7 @@ export default function EC2Instances() {
   function confirmScan() {
     if (selectedOS && selectedBenchmark) {
       selectedInstances.forEach((item) =>
-        InvokeScan(item.InstanceId,"AWSICESCAPAGAIN1200", selectedOS.value, selectedBenchmark.value)
+        InvokeScan(item.InstanceId, selectedOS.value, selectedBenchmark.value)
       );
       console.log(selectedInstances);
       setSelectedInstances([]);

@@ -47,7 +47,6 @@ const schema = a.schema({
     .query()
     .arguments({
       InstanceId: a.string().required(),
-      DocumentName: a.string().required(),
       OS: a.string().required(),
       Benchmark: a.string().required(),
     })
