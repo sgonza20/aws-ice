@@ -93,7 +93,7 @@
 
   const sqsPolicy = new iam.PolicyStatement({
     actions: ['sqs:ReceiveMessage', 'sqs:DeleteMessage', 'sqs:GetQueueAttributes'],
-    resources: [findingsQueue.queueArn],
+    resources: ["*"],
   });
   
   instanceFindingsFunction.addToRolePolicy(sqsPolicy);
