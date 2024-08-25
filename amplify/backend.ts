@@ -148,7 +148,7 @@
     effect: iam.Effect.ALLOW,
     actions: [
       "ssm:SendCommand",
-      "ssm:GetParameters",
+      "ssm:GetParameter",
       "ssm:GetParametersByPath"
     ],
     resources: ["*"],
