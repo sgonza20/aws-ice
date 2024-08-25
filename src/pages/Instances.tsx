@@ -202,7 +202,8 @@ export default function EC2Instances() {
               Delete
             </Button>
             <Button
-              onClick={() => setIsRunModalVisible(true)}
+              onClick={() => selectedInstances.length > 0 && setIsRunModalVisible(true)}
+              disabled={selectedInstances.length === 0}
             >
               Run Scan
             </Button>
@@ -258,7 +259,6 @@ export default function EC2Instances() {
           <Box margin={{ vertical: "xs" }} textAlign="center" color="inherit">
             <SpaceBetween size="m">
               <b>No EC2 Instances</b>
-              <Button onClick={() => {}}>Create Instance</Button>
             </SpaceBetween>
           </Box>
         }
