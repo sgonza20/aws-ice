@@ -17,8 +17,10 @@ import { generateClient } from "aws-amplify/data";
 
 interface Finding {
   instanceId: string;
-  totalFailed: number;
-  totalPassed: number;
+  totalLow: number;
+  totalMedium: number;
+  totalHigh: number;
+  totalUnknown: number;
 }
 
 const client = generateClient<Schema>();
@@ -26,18 +28,31 @@ const client = generateClient<Schema>();
 export default function Home() {
   const [instances, setInstances] = useState<Array<Schema["Instance"]["type"]>>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
-  const totalFailed = findings.reduce((sum, finding) => sum + finding.totalFailed, 0);
-  const totalPassed = findings.reduce((sum, finding) => sum + finding.totalPassed, 0);
+  const totalLow = findings.reduce((sum, finding) => sum + finding.totalLow, 0);
+  const totalMedium = findings.reduce((sum, finding) => sum + finding.totalMedium, 0);
+  const totalHigh = findings.reduce((sum, finding) => sum + finding.totalHigh, 0);
+  const totalUnknown = findings.reduce((sum, finding) => sum + finding.totalUnknown, 0);
+
 
   const pieChartData = [
     {
-      title: "Passed Findings",
-      value: totalPassed,
+      title: "Low Severity",
+      value: totalLow,
       lastUpdate: new Date().toLocaleDateString(),
     },
     {
-      title: "Failed Findings",
-      value: totalFailed,
+      title: "Medium Severity",
+      value: totalMedium,
+      lastUpdate: new Date().toLocaleDateString(),
+    },
+    {
+      title: "High Severity",
+      value: totalHigh,
+      lastUpdate: new Date().toLocaleDateString(),
+    },
+    {
+      title: "Unknown Severity",
+      value: totalUnknown,
       lastUpdate: new Date().toLocaleDateString(),
     },
   ];
@@ -82,20 +97,26 @@ export default function Home() {
       const findingsAggregated: Record<string, Finding> = {};
   
       data.forEach((finding) => {
-        const { InstanceId, Result } = finding;
+        const { InstanceId, Severity } = finding;
   
         if (!findingsAggregated[InstanceId]) {
           findingsAggregated[InstanceId] = {
             instanceId: InstanceId,
-            totalFailed: 0,
-            totalPassed: 0,
+            totalLow: 0,
+            totalMedium: 0,
+            totalHigh: 0,
+            totalUnknown: 0,
           };
         }
   
-        if (Result === "fail") {
-          findingsAggregated[InstanceId].totalFailed += 1;
-        } else if (Result === "pass") {
-          findingsAggregated[InstanceId].totalPassed += 1;
+        if (Severity === "low") {
+          findingsAggregated[InstanceId].totalLow += 1;
+        } else if (Severity === "medium") {
+          findingsAggregated[InstanceId].totalMedium += 1;
+        } else if (Severity === "high") {
+          findingsAggregated[InstanceId].totalHigh += 1;
+        } else if (Severity === "unknown") {
+            findingsAggregated[InstanceId].totalUnknown += 1;
         }
       });
   
