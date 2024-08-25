@@ -22,7 +22,6 @@ interface DynamoDBItem {
 export const handler = async (event: any) => {
     console.log("Event received:", JSON.stringify(event, null, 2));
 
-    // Process the first SQS record in the event
     if (event.Records && event.Records.length > 0) {
         const sqsRecord = event.Records[0];
         const s3Event = JSON.parse(sqsRecord.body);
