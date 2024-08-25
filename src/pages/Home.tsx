@@ -27,6 +27,7 @@ const client = generateClient<Schema>();
 
 export default function Home() {
   const [instances, setInstances] = useState<Array<Schema["Instance"]["type"]>>([]);
+  const [recentInstances, setRecentInstances] = useState<Array<Schema["Instance"]["type"]>>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
   const totalLow = findings.reduce((sum, finding) => sum + finding.totalLow, 0);
   const totalMedium = findings.reduce((sum, finding) => sum + finding.totalMedium, 0);
@@ -168,10 +169,39 @@ export default function Home() {
       console.error("Error fetching findings:", error);
     }
   }
+
+  function isWithinLast24Hours(date: string | undefined): boolean {
+    if (!date) return false;
+    const now = new Date();
+    const scanDate = new Date(date);
+    const timeDifference = now.getTime() - scanDate.getTime();
+    return timeDifference <= 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  }
+
+  async function getRecentScans() {
+    try {
+      const { data, errors } = await client.models.Instance.list();
+  
+      if (errors) {
+        console.error("Error fetching instances:", errors);
+        return [];
+      }
+  
+      const recentInstances = data.filter((instance) =>
+        isWithinLast24Hours(instance?.LastScanTime!)
+      );
+  
+      setRecentInstances(recentInstances);
+    } catch (error) {
+      console.error("Error fetching recent scans:", error);
+      return [];
+    }
+  }
   
 
   // Update scans periodically
   useEffect(() => {
+    getRecentScans();
     syncInstances();
     fetchFindings();
     const subscription = client.models.Instance.observeQuery().subscribe({
@@ -283,7 +313,7 @@ export default function Home() {
                           ),
                         },
                       ]}
-                      items={instances}
+                      items={recentInstances}
                     />
                   ),
                 },
