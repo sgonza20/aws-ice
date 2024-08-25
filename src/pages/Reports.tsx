@@ -18,7 +18,7 @@ interface Finding {
   instanceId: string;
   totalFailed: number;
   totalPassed: number;
-  Report_url: string; // Add this field
+  Report_url: string;
 }
 
 const client = generateClient<Schema>();
@@ -45,14 +45,14 @@ export default function Reports() {
       data.forEach((finding) => {
         const InstanceId = finding.InstanceId as string;
         const Result = finding.Result as string;
-        const Report_url = finding.Report_url as string; // Fetch the Report_url
+        const Report_url = finding.Report_url as string;
 
         if (!findingsAggregated[InstanceId]) {
           findingsAggregated[InstanceId] = {
             instanceId: InstanceId,
             totalFailed: 0,
             totalPassed: 0,
-            Report_url: Report_url // Include the Report_url
+            Report_url: Report_url
           };
         }
 

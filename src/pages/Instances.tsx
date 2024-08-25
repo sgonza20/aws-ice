@@ -39,19 +39,6 @@ export default function EC2Instances() {
   const itemsPerPage = 10;
 
 
-  useEffect(() => {
-    syncInstances();
-    const subscription = client.models.Instance.observeQuery().subscribe({
-      next: (data) => {
-        setInstances(data.items);
-      },
-      error: (error) => console.error("Subscription error:", error),
-    });
-  
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
 
   async function getInstances() {
     setIsLoading(true);
@@ -190,6 +177,20 @@ export default function EC2Instances() {
     (currentPageIndex - 1) * itemsPerPage,
     currentPageIndex * itemsPerPage
   );
+
+  useEffect(() => {
+    syncInstances();
+    const subscription = client.models.Instance.observeQuery().subscribe({
+      next: (data) => {
+        setInstances(data.items);
+      },
+      error: (error) => console.error("Subscription error:", error),
+    });
+  
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
     
 
   return (
