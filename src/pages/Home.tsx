@@ -219,9 +219,9 @@ export default function Home() {
   return (
     <ContentLayout>
       <SpaceBetween size="l">
-        <Box textAlign="center">
+        {/* <Box textAlign="center">
           <img src="https://github.com/sgonza20/aws-ice/blob/main/src/components/Images/openscap-horizontal.png" alt="OpenSCAP Logo" style={{ width: "400px" }} />
-        </Box>
+        </Box> */}
         <Container>
           <Header variant="h2">Overview</Header>
           <p>Welcome to AWS - Instance Compliance Evaluation.</p>

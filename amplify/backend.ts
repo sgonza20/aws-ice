@@ -205,7 +205,7 @@
       },
       targets: [
         new targets.LambdaFunction(scanStatusFunction, {
-          event: events.RuleTargetInput.fromObject({}),
+          event: events.RuleTargetInput.fromEventPath('$'),
         }),
       ],
     }
