@@ -6,11 +6,12 @@ const cloudwatch = new AWS.CloudWatch();
 const s3 = new AWS.S3();
 
 const TABLE_NAME = process.env.FINDINGS_TABLE_NAME!;
-const SIGNED_URL_EXPIRATION = 3600; 
+const SIGNED_URL_EXPIRATION = 3600;
 
 interface DynamoDBItem {
     InstanceId: string;
     SCAP_Rule_Name: string;
+    Benchmark: string; // Added Benchmark field
     Time: string;
     Severity: string;
     Result: string;
@@ -74,6 +75,7 @@ export const handler = async (event: any) => {
                 }
 
                 const instanceId = fileKey.split('/')[0];
+                const benchmark = extractBenchmark(parsedXml);
 
                 let high = 0;
                 let medium = 0;
@@ -86,13 +88,12 @@ export const handler = async (event: any) => {
                 for (const item of ruleResults) {
                     const testId = item['$']?.['idref'];
                     const result = item['result']?.[0];
-                    const severity = item['severity']?.[0]; 
+                    const severity = item['severity']?.[0];
 
                     if (result === "fail" || result === "pass") {
-
                         const reportUrl = await generatePresignedUrl(bucketName, fileKey.replace('.xml', '.html'));
 
-                        saveToDynamoDB(dynamoDbItems, instanceId, item, reportUrl);
+                        saveToDynamoDB(dynamoDbItems, instanceId, item, benchmark, reportUrl);
 
                         if (severity === "high") {
                             high++;
@@ -132,11 +133,12 @@ export const handler = async (event: any) => {
     }
 };
 
-function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item: any, reportUrl: string) {
+function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item: any, benchmark: string, reportUrl: string) {
     const currentTime = new Date().toISOString();
     dynamoDbItems.push({
         InstanceId: instanceId,
         SCAP_Rule_Name: item['$']?.['idref'] || 'unknown',
+        Benchmark: benchmark, // Added Benchmark field
         Time: item['$']?.['time'] || 'unknown',
         Severity: item['$']?.['severity'] || 'unknown',
         Result: item['result']?.[0] || 'unknown',
@@ -151,7 +153,7 @@ async function generatePresignedUrl(bucketName: string, key: string) {
         const params = {
             Bucket: bucketName,
             Key: key,
-            Expires: SIGNED_URL_EXPIRATION 
+            Expires: SIGNED_URL_EXPIRATION
         };
         const url = s3.getSignedUrlPromise('getObject', params);
         return url;
@@ -159,6 +161,11 @@ async function generatePresignedUrl(bucketName: string, key: string) {
         console.error("Error generating pre-signed URL:", error);
         throw error;
     }
+}
+
+function extractBenchmark(parsedXml: any): string {
+    const benchmark = parsedXml?.['arf:asset-report-collection']?.['arf:report']?.[0]?.['arf:content']?.[0]?.['TestResult']?.[0]?.['benchmark']?.[0]?.['$']?.['id'];
+    return benchmark || 'Unknown Benchmark';
 }
 
 function sendMetric(value: number, title: string, instanceId: string) {

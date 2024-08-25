@@ -19,6 +19,7 @@ const schema = a.schema({
     .model({
       InstanceId: a.string().required(),
       SCAP_Rule_Name: a.string().required(),
+      Benchmark: a.string(),
       Time: a.string(),
       Severity: a.enum(["high", "medium", "low", "unknown"]),
       Result: a.string(),
