@@ -57,7 +57,6 @@ export const handler = async (event: any) => {
                     console.log("Keys under 'arf:asset-report-collection':", Object.keys(parsedXml['arf:asset-report-collection']));
                     throw new Error("Unable to locate 'report' in the parsed XML.");
                 }
-
                 let ruleResults: any[] = [];
                 console.log("Starting loop to extract rule results");
 
@@ -164,9 +163,33 @@ async function generatePresignedUrl(bucketName: string, key: string) {
 }
 
 function extractBenchmark(parsedXml: any): string {
-    const benchmark = parsedXml?.['arf:content']?.[0]?.['TestResult']?.[0]?.['benchmark']['idref']?.[0]
-    return benchmark || 'Unknown Benchmark';
+    const reports = parsedXml?.['arf:asset-report-collection']?.['arf:reports']?.[0]?.['arf:report'];
+
+    if (!reports) {
+        console.log("No reports found in the parsed XML.");
+        return 'Unknown Benchmark';
+    }
+    for (const report of reports) {
+        const testResults = report?.['arf:content']?.[0]?.['TestResult'];
+        console.log("Found TestResults:", testResults);
+        
+        if (testResults) {
+            for (const testResult of testResults) {
+                const testResultAttributes = testResult['$'];
+                const fullId = testResultAttributes?.['id'];
+
+                if (fullId) {
+                    const benchmarkId = fullId.split('.').pop() || 'Unknown Benchmark';
+                    return benchmarkId;
+                }
+                }
+            }
+        }
+
+    console.log("No benchmark found in the parsed XML.");
+    return 'Unknown Benchmark';
 }
+
 
 function sendMetric(value: number, title: string, instanceId: string) {
     const params = {
