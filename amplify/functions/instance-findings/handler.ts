@@ -11,7 +11,7 @@ const SIGNED_URL_EXPIRATION = 3600;
 interface DynamoDBItem {
     InstanceId: string;
     SCAP_Rule_Name: string;
-    Benchmark: string; // Added Benchmark field
+    Benchmark: string;
     Time: string;
     Severity: string;
     Result: string;
@@ -137,7 +137,7 @@ function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item:
     dynamoDbItems.push({
         InstanceId: instanceId,
         SCAP_Rule_Name: item['$']?.['idref'] || 'unknown',
-        Benchmark: benchmark, // Added Benchmark field
+        Benchmark: benchmark,
         Time: item['$']?.['time'] || 'unknown',
         Severity: item['$']?.['severity'] || 'unknown',
         Result: item['result']?.[0] || 'unknown',
@@ -184,9 +184,10 @@ function extractBenchmark(parsedXml: any): string {
                 if (benchmarkId) {
 
                     const parts = benchmarkId.split('_');
-                    if (parts.length > 2) {
-                        return parts.slice(1).join('_'); 
-                    }
+                    const parts1 = parts.split('_');
+                    const parts2 = parts1.split('_');
+ 
+                    return parts2;
                 }
             }
         }
