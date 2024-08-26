@@ -171,31 +171,22 @@ function extractBenchmark(parsedXml: any): string {
         return 'Unknown Benchmark';
     }
 
-
     for (const report of reports) {
         const testResults = report?.['arf:content']?.[0]?.['TestResult'];
         console.log("Found TestResults:", testResults);
         
         if (testResults) {
-
             for (const testResult of testResults) {
                 const testResultAttributes = testResult['$'];
                 const benchmarkId = testResultAttributes?.['id'];
 
-                if (benchmarkId) {
-
-                    const parts = benchmarkId.split('_');
-
-                    const targetPart = parts.find((part: string) => part.startsWith('xccdf_org.ssgproject.content_profile'));
-                    if (targetPart) {
-                        return targetPart; 
-                    }
-                }
+                return benchmarkId;
             }
         }
     }
 
-    return 'Unknown Benchmark'; 
+    console.log("No benchmark found in the parsed XML.");
+    return 'Unknown Benchmark';
 }
 
 
