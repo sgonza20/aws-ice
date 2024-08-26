@@ -1,6 +1,6 @@
 ## aws-ice
 
-![Architecture diagram](aws-ice.drawio.svg)
+![Architecture diagram](aws-ice-diagram.drawio.svg)
 
 ## License
 
