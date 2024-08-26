@@ -174,12 +174,9 @@ function extractBenchmark(parsedXml: any): string {
         if (testResults) {
             for (const testResult of testResults) {
                 const testResultAttributes = testResult['$'];
-                const fullId = testResultAttributes?.['id'];
+                const benchmark = testResultAttributes?.['id'];
 
-                if (fullId) {
-                    const benchmarkId = fullId.split('.').pop() || 'Unknown Benchmark';
-                    return benchmarkId;
-                }
+                return benchmark;
                 }
             }
         }
