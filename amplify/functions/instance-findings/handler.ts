@@ -171,6 +171,7 @@ function extractBenchmark(parsedXml: any): string {
         return 'Unknown Benchmark';
     }
 
+
     for (const report of reports) {
         const testResults = report?.['arf:content']?.[0]?.['TestResult'];
         console.log("Found TestResults:", testResults);
@@ -184,10 +185,11 @@ function extractBenchmark(parsedXml: any): string {
                 if (benchmarkId) {
 
                     const parts = benchmarkId.split('_');
-                    const parts1 = parts.split('_');
-                    const parts2 = parts1.split('_');
- 
-                    return parts2;
+
+                    const targetPart = parts.find((part: string) => part.startsWith('xccdf_org.ssgproject.content_profile'));
+                    if (targetPart) {
+                        return targetPart; 
+                    }
                 }
             }
         }
