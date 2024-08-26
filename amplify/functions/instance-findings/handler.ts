@@ -11,7 +11,7 @@ const SIGNED_URL_EXPIRATION = 3600;
 interface DynamoDBItem {
     InstanceId: string;
     SCAP_Rule_Name: string;
-    Benchmark: string; // Added Benchmark field
+    Benchmark: string;
     Time: string;
     Severity: string;
     Result: string;
@@ -137,7 +137,7 @@ function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item:
     dynamoDbItems.push({
         InstanceId: instanceId,
         SCAP_Rule_Name: item['$']?.['idref'] || 'unknown',
-        Benchmark: benchmark, // Added Benchmark field
+        Benchmark: benchmark,
         Time: item['$']?.['time'] || 'unknown',
         Severity: item['$']?.['severity'] || 'unknown',
         Result: item['result']?.[0] || 'unknown',
@@ -166,13 +166,11 @@ function extractBenchmark(parsedXml: any): string {
     const reports = parsedXml?.['arf:asset-report-collection']?.['arf:reports']?.[0]?.['arf:report'];
 
     if (!reports) {
-        console.log("No reports found in the parsed XML.");
         return 'Unknown Benchmark';
     }
     for (const report of reports) {
         const testResults = report?.['arf:content']?.[0]?.['TestResult'];
-        console.log("Found TestResults:", testResults);
-        
+
         if (testResults) {
             for (const testResult of testResults) {
                 const testResultAttributes = testResult['$'];
