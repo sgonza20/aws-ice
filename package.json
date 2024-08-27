@@ -18,6 +18,7 @@
     "@aws-sdk/client-sfn": "^3.624.0",
     "@aws-sdk/client-ssm": "^3.624.0",
     "@aws-sdk/lib-dynamodb": "^3.624.0",
+    "@aws-sdk/s3-request-presigner": "^3.637.0",
     "@cloudscape-design/board-components": "^3.0.76",
     "@cloudscape-design/components": "^3.0.718",
     "@cloudscape-design/global-styles": "^1.0.31",
