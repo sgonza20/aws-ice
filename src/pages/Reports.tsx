@@ -46,14 +46,12 @@ export default function Reports() {
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [filteringText, setFilteringText] = useState('');
   const [selectedBenchmark, setSelectedBenchmark] = useState<string>('');
-  const [pageTokens, setPageTokens] = useState([null]);
   const itemsPerPage = 10;
 
   async function fetchFindings() {
     try {
-      const { data, nextToken, errors } = await client.models.Finding.list({
-        limit: 20000,
-        nextToken: undefined,
+      const { data, errors } = await client.models.Finding.list({
+        limit: 1000,
       });
       
       if (errors) {
@@ -90,7 +88,6 @@ export default function Reports() {
     } catch (error) {
       console.error("Error fetching findings:", error);
     }
-    
   }
 
   useEffect(() => {
@@ -111,9 +108,6 @@ export default function Reports() {
     (currentPageIndex - 1) * itemsPerPage,
     currentPageIndex * itemsPerPage
   );
-
-  console.log('Total findings:', findings.length);
-console.log('Filtered findings:', filteredFindings.length);
 
   return (
     <ContentLayout>
