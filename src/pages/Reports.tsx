@@ -89,7 +89,7 @@ export default function Reports() {
         console.error("Error fetching findings:", errors);
         return;
       }
-      const transformedFindings = transformFindings(findings);
+      const transformedFindings = await transformFindings(findings);
       setFindings(Object.values(transformedFindings));
     } catch (error) {
       console.error("Error fetching findings:", error);
