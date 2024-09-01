@@ -44,79 +44,105 @@ const client = generateClient<Schema>();
 export default function Reports() {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
-  const [filteringText, setFilteringText] = useState('');
-  const [selectedBenchmark, setSelectedBenchmark] = useState<string>('');
+  const [pageTokens, setPageTokens] = useState<string[]>([]);
+  const [hasMorePages, setHasMorePages] = useState(true);
+  const [filteringText, setFilteringText] = useState("");
+  const [selectedBenchmark, setSelectedBenchmark] = useState<string>("");
   const itemsPerPage = 10;
 
-  async function fetchFindings() {
+  async function transformFindings(data: any[]): Promise<Finding[]> {
+    const findingsAggregated: Record<string, Finding> = {};
+
+    data.forEach((finding) => {
+      const InstanceId = finding.InstanceId as string;
+      const Result = finding.Result as string;
+      const Report_url = finding.Report_url as string;
+      const Benchmark = finding.Benchmark as string;
+
+      if (!findingsAggregated[InstanceId]) {
+        findingsAggregated[InstanceId] = {
+          instanceId: InstanceId,
+          totalFailed: 0,
+          totalPassed: 0,
+          Report_url: Report_url,
+          Benchmark: Benchmark,
+        };
+      }
+
+      if (Result === "fail") {
+        findingsAggregated[InstanceId].totalFailed += 1;
+      } else if (Result === "pass") {
+        findingsAggregated[InstanceId].totalPassed += 1;
+      }
+    });
+
+    return Object.values(findingsAggregated);
+  }
+
+  async function fetchFirstPage() {
     try {
-      const { data, errors } = await client.models.Finding.list({
-        limit: 1000,
+      const { data: findings, errors } = await client.models.Finding.list({
+        limit: itemsPerPage,
       });
-      
+
       if (errors) {
         console.error("Error fetching findings:", errors);
         return;
       }
-
-      const findingsAggregated: Record<string, Finding> = {};
-
-      data.forEach((finding) => {
-        const InstanceId = finding.InstanceId as string;
-        const Result = finding.Result as string;
-        const Report_url = finding.Report_url as string;
-        const Benchmark = finding.Benchmark as string;
-
-        if (!findingsAggregated[InstanceId]) {
-          findingsAggregated[InstanceId] = {
-            instanceId: InstanceId,
-            totalFailed: 0,
-            totalPassed: 0,
-            Report_url: Report_url,
-            Benchmark: Benchmark
-          };
-        }
-
-        if (Result === "fail") {
-          findingsAggregated[InstanceId].totalFailed += 1;
-        } else if (Result === "pass") {
-          findingsAggregated[InstanceId].totalPassed += 1;
-        }
-      });
-
-      setFindings(Object.values(findingsAggregated));
+      const transformedFindings = transformFindings(findings);
+      setFindings(Object.values(transformedFindings));
     } catch (error) {
       console.error("Error fetching findings:", error);
     }
   }
 
+  const handleNextPage = async () => {
+    if (hasMorePages && currentPageIndex === pageTokens.length) {
+      const {
+        data: findings,
+        errors,
+        nextToken,
+      } = await client.models.Finding.list({
+        nextToken: pageTokens[pageTokens.length - 1],
+      });
+
+      if (errors) {
+        console.error("Error fetching findings:", errors);
+        return;
+      }
+
+      if (!nextToken) {
+        setHasMorePages(false);
+      } else {
+        setPageTokens([...pageTokens, nextToken]);
+      }
+
+      const transformedFindings = await transformFindings(findings);
+      setFindings((prevFindings) => [...prevFindings, ...transformedFindings]);
+    }
+
+    setCurrentPageIndex(currentPageIndex + 1);
+  };
   useEffect(() => {
-    fetchFindings();
+    fetchFirstPage();
   }, []);
 
-  const handlePaginationChange = ({ detail }: { detail: { currentPageIndex: number } }) => {
-    setCurrentPageIndex(detail.currentPageIndex);
-  };
+  // const filteredFindings = findings
+  //   .filter(finding =>
+  //     finding.instanceId.toLowerCase().includes(filteringText.toLowerCase()) &&
+  //     (!selectedBenchmark || finding.Benchmark === selectedBenchmark)
+  //   );
 
-  const filteredFindings = findings
-    .filter(finding =>
-      finding.instanceId.toLowerCase().includes(filteringText.toLowerCase()) &&
-      (!selectedBenchmark || finding.Benchmark === selectedBenchmark)
-    );
-
-  const paginatedFindings = filteredFindings.slice(
-    (currentPageIndex - 1) * itemsPerPage,
-    currentPageIndex * itemsPerPage
-  );
+  // const paginatedFindings = filteredFindings.slice(
+  //   (currentPageIndex - 1) * itemsPerPage,
+  //   currentPageIndex * itemsPerPage
+  // );
 
   return (
     <ContentLayout>
       <Header
         variant="h1"
-        actions={
-          <SpaceBetween size="xs" direction="horizontal">
-          </SpaceBetween>
-        }
+        actions={<SpaceBetween size="xs" direction="horizontal"></SpaceBetween>}
       >
         Findings
       </Header>
@@ -130,60 +156,65 @@ export default function Reports() {
           />
         </FormField>
         <FormField label="Filter by Benchmark">
-        <Select
-          selectedOption={benchmarks.find(b => b.value === selectedBenchmark) ?? null}
-          onChange={({ detail }) => setSelectedBenchmark(detail.selectedOption?.value || '')}
-          options={benchmarks}
-          placeholder="Select a benchmark"
-        />
+          <Select
+            selectedOption={
+              benchmarks.find((b) => b.value === selectedBenchmark) ?? null
+            }
+            onChange={({ detail }) =>
+              setSelectedBenchmark(detail.selectedOption?.value || "")
+            }
+            options={benchmarks}
+            placeholder="Select a benchmark"
+          />
         </FormField>
       </SpaceBetween>
       <Table
         columnDefinitions={[
-          { 
+          {
             id: "instanceId",
-            header: "Instance ID", 
+            header: "Instance ID",
             cell: (item) => item.instanceId,
             isRowHeader: true,
           },
-          { 
-            id: "totalPassed", 
-            header: "Total Passed", 
+          {
+            id: "totalPassed",
+            header: "Total Passed",
             cell: (item) => (
-              <StatusIndicator 
-                type="success">{item.totalPassed}
+              <StatusIndicator type="success">
+                {item.totalPassed}
               </StatusIndicator>
             ),
           },
-          { 
-            id: "totalFailed", 
-            header: "Total Failed", 
+          {
+            id: "totalFailed",
+            header: "Total Failed",
             cell: (item) => (
-              <StatusIndicator 
-                type="error">{item.totalFailed}
-              </StatusIndicator>
+              <StatusIndicator type="error">{item.totalFailed}</StatusIndicator>
             ),
           },
-          { 
+          {
             id: "reportUrl",
             header: "View Report",
             cell: (item) => (
-              <Button
-                href={item.Report_url}
-                target="_blank"
-                variant="link"
-              >
+              <Button href={item.Report_url} target="_blank" variant="link">
                 View
               </Button>
             ),
           },
         ]}
-        items={paginatedFindings}
+        items={findings}
         pagination={
           <Pagination
             currentPageIndex={currentPageIndex}
-            onChange={handlePaginationChange}
-            pagesCount={Math.ceil(filteredFindings.length / itemsPerPage)}
+            pagesCount={pageTokens.length}
+            openEnd
+            onNextPageClick={handleNextPage}
+            onPreviousPageClick={() =>
+              setCurrentPageIndex(currentPageIndex - 1)
+            }
+            onChange={({ detail }) =>
+              setCurrentPageIndex(detail.currentPageIndex)
+            }
           />
         }
         empty={
