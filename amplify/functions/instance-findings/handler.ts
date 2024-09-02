@@ -90,7 +90,7 @@ export const handler = async (event: any) => {
                 for (const item of ruleResults) {
                     const testId = item['$']?.['idref'];
                     const result = item['result']?.[0];
-                    const severity = item['severity']?.[0];
+                    const severity = item['$']?.['severity'];
 
                     if (result === "fail") {
                         totalFailed++;
