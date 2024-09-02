@@ -17,7 +17,7 @@ const ec2Client = new EC2Client();
 export const fetchInstances = async () => {
   try {
     let allInstances = new Array<InstanceInformation>();
-    let nextToken = undefined;
+    let nextToken: string | undefined = undefined;
 
     do {
       const command = new DescribeInstanceInformationCommand({
@@ -34,37 +34,42 @@ export const fetchInstances = async () => {
       nextToken = data.NextToken;
     } while (nextToken);
 
-    const instancesWithNames = await Promise.all(
-      allInstances.map(async (instance) => {
-        const instanceId = instance.InstanceId;
+    const instanceIds = allInstances.map(instance => instance.InstanceId!).filter(id => id);
+    if (instanceIds.length === 0) {
+      return [];
+    }
 
-        const tagsCommand = new DescribeTagsCommand({
-          Filters: [
-            {
-              Name: "resource-id",
-              Values: [instanceId ?? ""],
-            },
-            {
-              Name: "key",
-              Values: ["Name"],
-            },
-          ],
-        });
+    const tagsCommand = new DescribeTagsCommand({
+      Filters: [
+        {
+          Name: "resource-id",
+          Values: instanceIds,
+        },
+        {
+          Name: "key",
+          Values: ["Name"],
+        },
+      ],
+    });
 
-        const tagsData: DescribeTagsCommandOutput = await ec2Client.send(
-          tagsCommand
-        );
+    const tagsData: DescribeTagsCommandOutput = await ec2Client.send(tagsCommand);
 
-        const nameTag = tagsData.Tags?.find((tag) => tag.Key === "Name");
+    const nameTagsMap = new Map<string, string>();
+    tagsData.Tags?.forEach(tag => {
+      if (tag.Key === "Name" && tag.Value) {
+        nameTagsMap.set(tag.ResourceId ?? "", tag.Value);
+      }
+    });
 
-        return {
-          InstanceId: instance.InstanceId,
-          InstanceName: nameTag?.Value || "Unknown",
-          PlatformName: instance.PlatformName,
-          PlatformType: instance.PlatformType,
-        } as Schema["Instance"]["type"];
-      })
-    );
+    const instancesWithNames = allInstances.map(instance => {
+      const instanceId = instance.InstanceId!;
+      return {
+        InstanceId: instanceId,
+        InstanceName: nameTagsMap.get(instanceId) || "Unknown",
+        PlatformName: instance.PlatformName,
+        PlatformType: instance.PlatformType,
+      } as Schema["Instance"]["type"];
+    });
 
     return instancesWithNames;
   } catch (error) {
