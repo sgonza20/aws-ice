@@ -53,12 +53,13 @@ export default function Reports() {
       const { data, errors } = await client.models.Finding.list({
         limit: 1000,
       });
-      
+  
       if (errors) {
         console.error("Error fetching findings:", errors);
         return;
       }
   
+      const instanceNameMap = await fetchInstanceNames();
       const findingsAggregated: Record<string, Finding> = {};
   
       data.forEach((finding) => {
@@ -70,11 +71,11 @@ export default function Reports() {
   
         if (!findingsAggregated[InstanceId]) {
           findingsAggregated[InstanceId] = {
-            instanceId: InstanceId,
+            instanceId: instanceNameMap[InstanceId] || InstanceId,
             totalFailed: TotalFailed,
             totalPassed: TotalPassed,
             Report_url: Report_url,
-            Benchmark: Benchmark
+            Benchmark: Benchmark,
           };
         }
       });
@@ -82,6 +83,32 @@ export default function Reports() {
       setFindings(Object.values(findingsAggregated));
     } catch (error) {
       console.error("Error fetching findings:", error);
+    }
+  }
+  
+  async function fetchInstanceNames() {
+    try {
+      const { data, errors } = await client.models.Instance.list({
+        limit: 1000,
+      });
+  
+      if (errors) {
+        console.error("Error fetching instance names:", errors);
+        return {};
+      }
+  
+      const instanceNameMap: Record<string, string> = {};
+      data.forEach((instance) => {
+        const name = instance.InstanceName;
+        if (name) {
+          instanceNameMap[instance.InstanceId] = name;
+        }
+      });
+  
+      return instanceNameMap;
+    } catch (error) {
+      console.error("Error fetching instance names:", error);
+      return {};
     }
   }
 
@@ -116,7 +143,7 @@ export default function Reports() {
         Findings
       </Header>
       <SpaceBetween size="m">
-        <FormField label="Search by Instance ID">
+        <FormField label="Search by Instance Name">
           <TextFilter
             filteringText={filteringText}
             filteringPlaceholder="Find instances"
@@ -137,7 +164,7 @@ export default function Reports() {
         columnDefinitions={[
           { 
             id: "instanceId",
-            header: "Instance ID", 
+            header: "Instance Name",
             cell: (item) => item.instanceId,
             isRowHeader: true,
           },

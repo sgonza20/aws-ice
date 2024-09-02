@@ -189,7 +189,7 @@ export default function EC2Instances() {
     typeof option.label === 'string' && typeof option.value === 'string';
 
   const filteredInstances = instances.filter(instance =>
-    instance.InstanceId.toLowerCase().includes(filteringText.toLowerCase())
+    instance.InstanceName!.toLowerCase().includes(filteringText.toLowerCase())
   );
 
   const paginatedInstances = filteredInstances.slice(
@@ -246,7 +246,7 @@ export default function EC2Instances() {
       >
         Instances ({instances.length})
       </Header>
-      <FormField label="Search by Instance ID">
+      <FormField label="Search by Instance Name">
         <TextFilter
           filteringText={filteringText}
           filteringPlaceholder="Find instances"
