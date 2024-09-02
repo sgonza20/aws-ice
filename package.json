@@ -15,6 +15,7 @@
     "@aws-amplify/ui-react-storage": "^3.2.0",
     "@aws-sdk/client-dynamodb": "^3.624.0",
     "@aws-sdk/client-ec2": "^3.623.0",
+    "@aws-sdk/client-iam": "^3.637.0",
     "@aws-sdk/client-sfn": "^3.624.0",
     "@aws-sdk/client-ssm": "^3.624.0",
     "@aws-sdk/lib-dynamodb": "^3.624.0",

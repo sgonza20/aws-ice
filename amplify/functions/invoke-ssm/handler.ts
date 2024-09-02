@@ -5,14 +5,23 @@ import {
   GetParameterCommand,
   GetParameterCommandOutput,
 } from "@aws-sdk/client-ssm";
+import {
+  IAMClient,
+  ListAttachedRolePoliciesCommand, 
+  AttachRolePolicyCommand,
+  ListPoliciesCommand,
+  ListPoliciesCommandOutput,
+} from "@aws-sdk/client-iam";
+
 import type { Schema } from "../../data/resource";
 
 const ssmClient = new SSMClient();
+const iamClient = new IAMClient();
 
 export const handler: Schema["InvokeSSM"]["functionHandler"] = async (
   event: any
 ) => {
-  const { InstanceId, OS, Benchmark } = event.arguments;
+  const { InstanceId, OS, Benchmark, RoleName } = event.arguments;
 
   const parameterName = "/my-app/parameter-name";
   const getParameterCommand = new GetParameterCommand({ Name: parameterName });
@@ -24,6 +33,12 @@ export const handler: Schema["InvokeSSM"]["functionHandler"] = async (
     return {
       statusCode: 400,
       body: "Missing InstanceID",
+    };
+  }
+  if (!RoleName) {
+    return {
+      statusCode: 400,
+      body: "Missing RoleName",
     };
   }
   if (!DocumentName) {
@@ -45,14 +60,50 @@ export const handler: Schema["InvokeSSM"]["functionHandler"] = async (
     };
   }
 
-  console.log("Invoking SSM document with arguments:", event.arguments);
   try {
+    const listPoliciesCommand = new ListPoliciesCommand({});
+    const listPoliciesResponse: ListPoliciesCommandOutput = await iamClient.send(listPoliciesCommand);
+
+    const policy = listPoliciesResponse.Policies?.find(
+      (policy) => policy.PolicyName === "EC2S3AccessPolicy"
+    );
+
+    if (!policy) {
+      return {
+        statusCode: 500,
+        body: "Policy 'EC2S3AccessPolicy' not found",
+      };
+    }
+
+    const policyArn = policy.Arn;
+
+    const listAttachedRolePoliciesCommand = new ListAttachedRolePoliciesCommand({
+      RoleName: RoleName,
+    });
+    const listAttachedRolePoliciesResponse = await iamClient.send(listAttachedRolePoliciesCommand);
+
+    const policyAttached = listAttachedRolePoliciesResponse.AttachedPolicies?.some(
+      (policy) => policy.PolicyArn === policyArn
+    );
+
+    console.log("Policy attached:", policyAttached);
+
+    if (!policyAttached) {
+      const attachRolePolicyCommand = new AttachRolePolicyCommand({
+        RoleName: RoleName,
+        PolicyArn: policyArn,
+      });
+      await iamClient.send(attachRolePolicyCommand);
+      console.log(`Policy ${policyArn} attached to role ${RoleName}`);
+    }
+
+    console.log("Invoking SSM document with arguments:", event.arguments);
     const command = new SendCommandCommand({
-      InstanceIds: [event.arguments.InstanceId],
+      InstanceIds: [InstanceId],
       DocumentName: DocumentName,
       Parameters: {
-        OS: [event.arguments.OS],
-        Benchmark: [event.arguments.Benchmark],
+        OS: [OS],
+        Benchmark: [Benchmark],
       },
     });
 
@@ -62,10 +113,10 @@ export const handler: Schema["InvokeSSM"]["functionHandler"] = async (
 
     console.log("Command ID", commandId);
     if (!commandId) {
-        return {
-            statusCode: 500,
-            body: "Failed to retrieve CommandId",
-        };
+      return {
+        statusCode: 500,
+        body: "Failed to retrieve CommandId",
+      };
     }
     return {
       statusCode: 200,
