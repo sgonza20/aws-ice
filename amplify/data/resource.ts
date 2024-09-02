@@ -18,14 +18,17 @@ const schema = a.schema({
   Finding: a
     .model({
       InstanceId: a.string().required(),
-      SCAP_Rule_Name: a.string().required(),
       Benchmark: a.string(),
       Time: a.string(),
-      Severity: a.enum(["high", "medium", "low", "unknown"]),
-      Result: a.string(),
+      TotalFailed: a.integer().default(0),
+      TotalPassed: a.integer().default(0),
+      TotalUnknown: a.integer().default(0),
+      TotalHighSeverity: a.integer().default(0),
+      TotalMediumSeverity: a.integer().default(0),
+      TotalLowSeverity: a.integer().default(0),
       Report_url: a.string(),
     })
-    .identifier(["InstanceId", "SCAP_Rule_Name"])
+    .identifier(["InstanceId"])
     .authorization((allow) => [allow.publicApiKey(), allow.authenticated()]),
   InstanceInformation: a.customType({
     InstanceId: a.string(),
