@@ -36,10 +36,14 @@
     retentionPeriod: Duration.days(1), 
   });
 
-  const scapScanResultsBucket = new s3.Bucket(customResourceStack, "SCAPScanResultsBucket", {
-    publicReadAccess: false,
-    blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-  });
+  export const scapScanResultsBucket = new s3.Bucket(
+    customResourceStack,
+    "SCAPScanResultsBucket",
+    {
+      publicReadAccess: false,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    }
+  );
 
   const cfnUserPool = backend.auth.resources.cfnResources.cfnUserPool;
   cfnUserPool.adminCreateUserConfig = {
@@ -156,9 +160,19 @@
     ],
     resources: ["*"],
   });
+  const UploadReportToS3Policy = new iam.PolicyStatement({
+    sid: "UploadReportToS3",
+    effect: iam.Effect.ALLOW,
+    actions: ["s3:PutObject"],
+    resources: [
+      scapScanResultsBucket.bucketArn,
+      `${scapScanResultsBucket.bucketArn}/*`,
+    ],
+  });
 
   const runSSM = backend.invokeSSM.resources.lambda;
   runSSM.addToRolePolicy(InvokesSSMPolicy);
+  runSSM.addToRolePolicy(UploadReportToS3Policy);
 
   const s3Policy = new iam.PolicyStatement({
     sid: "S3Access",
