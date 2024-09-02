@@ -39,21 +39,25 @@ export default function Home() {
     {
       title: "Low Severity",
       value: totalLow,
+      color: "#0000cd",
       lastUpdate: new Date().toLocaleDateString(),
     },
     {
       title: "Medium Severity",
       value: totalMedium,
+      color: "#ffd700",
       lastUpdate: new Date().toLocaleDateString(),
     },
     {
       title: "High Severity",
       value: totalHigh,
+      color: "#dc143c",
       lastUpdate: new Date().toLocaleDateString(),
     },
     {
       title: "Unknown Severity",
       value: totalUnknown,
+      color: "#778899",
       lastUpdate: new Date().toLocaleDateString(),
     },
   ];
