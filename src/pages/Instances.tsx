@@ -57,6 +57,7 @@ export default function EC2Instances() {
           await client.models.Instance.create({
             InstanceId: instance?.InstanceId!,
             InstanceName: instance?.InstanceName,
+            RoleName: instance?.RoleName,
             CommandId: instance?.CommandId,
             PlatformName: instance?.PlatformName,
             PlatformType: instance?.PlatformType,
@@ -102,6 +103,7 @@ export default function EC2Instances() {
         await client.models.Instance.create({
           InstanceId: instance?.InstanceId!,
           InstanceName: instance?.InstanceName,
+          RoleName: instance?.RoleName,
           CommandId: instance?.CommandId,
           PlatformName: instance?.PlatformName,
           PlatformType: instance?.PlatformType,
@@ -125,38 +127,53 @@ export default function EC2Instances() {
   
   }
 
-  async function InvokeScan(InstanceID: string,OS: string, Benchmark: string) {
-    const { data, errors } = await client.queries.InvokeSSM({
-      InstanceId: InstanceID,
-      OS: OS,
-      Benchmark: Benchmark
-    });
-    console.log(data, errors);
-
-    if (data?.statusCode === 200) {
-      if (typeof data.body === 'string'){
-        const commandId = data.body;
-        await client.models.Instance.update({
-          InstanceId: InstanceID,
-          LastScanTime: new Date().toISOString(),
-          CommandId: commandId,
-          ScanStatus: 'InProgress',
-        });
+  async function InvokeScan(InstanceID: string, OS: string, Benchmark: string, RoleName: string) {
+    try {
+      const { data, errors } = await client.queries.InvokeSSM({
+        InstanceId: InstanceID,
+        RoleName: RoleName,
+        OS: OS,
+        Benchmark: Benchmark,
+      });
+      console.log(data, errors);
+    
+      if (errors) {
+        console.error("Error invoking SSM:", errors);
+        return;
       }
+    
+      if (data?.statusCode === 200) {
+        if (typeof data.body === 'string') {
+          const commandId = data.body;
+          await client.models.Instance.update({
+            InstanceId: InstanceID,
+            LastScanTime: new Date().toISOString(),
+            CommandId: commandId,
+            ScanStatus: 'InProgress',
+          });
+        }
+      }
+      syncInstances();
+    } catch (error) {
+      console.error("Error in InvokeScan:", error);
     }
-    syncInstances();
   }
+  
+  
 
   function confirmScan() {
     if (selectedOS && selectedBenchmark) {
-      selectedInstances.forEach((item) =>
-        InvokeScan(item.InstanceId, selectedOS.value, selectedBenchmark.value)
-      );
+      selectedInstances.forEach((item) => {
+        if (typeof item.RoleName === 'string') {
+          InvokeScan(item.InstanceId, selectedOS.value, selectedBenchmark.value, item.RoleName);
+        } else {
+          console.error('RoleName is not a string:', item.RoleName);
+        }
+      });
       console.log(selectedInstances);
       setSelectedInstances([]);
       setIsRunModalVisible(false);
     } else {
-      // Handle case where OS or Benchmark is not selected
       alert('Please select both OS and Benchmark.');
     }
   }

@@ -8,6 +8,7 @@ const schema = a.schema({
     .model({
       InstanceId: a.string().required(),
       InstanceName: a.string(),
+      RoleName: a.string(),
       PlatformType: a.string(),
       PlatformName: a.string(),
       LastScanTime: a.string(),
@@ -34,6 +35,7 @@ const schema = a.schema({
   InstanceInformation: a.customType({
     InstanceId: a.string(),
     InstanceName: a.string(),
+    RoleName: a.string(),
     PlatformType: a.string(),
     PlatformName: a.string(),
     LastScanTime: a.string(),
@@ -53,6 +55,7 @@ const schema = a.schema({
     .query()
     .arguments({
       InstanceId: a.string().required(),
+      RoleName: a.string().required(),
       OS: a.string().required(),
       Benchmark: a.string().required(),
     })

@@ -139,6 +139,7 @@
     actions: [
       "ssm:DescribeInstanceInformation",
       "ec2:DescribeTags",
+      "ec2:DescribeIamInstanceProfileAssociations",
     ],
     resources: ["*"],
   });
@@ -152,7 +153,10 @@
     actions: [
       "ssm:SendCommand",
       "ssm:GetParameter",
-      "ssm:GetParametersByPath"
+      "ssm:GetParametersByPath",
+      "iam:ListPolicies",
+      "iam:ListAttachedRolePolicies",
+      "iam:AttachRolePolicy",
     ],
     resources: ["*"],
   });
@@ -314,4 +318,22 @@ const scapScanSSMDocument = new ssm.CfnDocument(customResourceStack, 'SCAPScanDo
 const myParameter = new ssm.StringParameter(customResourceStack, 'MyParameter', {
   parameterName: '/my-app/parameter-name',
   stringValue: scapScanSSMDocument.ref
+});
+
+const s3PolicyForEC2 = new iam.PolicyStatement({
+  effect: iam.Effect.ALLOW,
+  actions: [
+    "s3:GetObject",
+    "s3:PutObject",
+    "s3:ListBucket",
+  ],
+  resources: [
+    scapScanResultsBucket.bucketArn,
+    `${scapScanResultsBucket.bucketArn}/*`,
+  ],
+});
+
+const ec2ManagedPolicy = new iam.ManagedPolicy(customResourceStack, 'AwsIceMangedPolicy', {
+  managedPolicyName: 'EC2S3AccessPolicy',
+  statements: [s3PolicyForEC2],
 });
