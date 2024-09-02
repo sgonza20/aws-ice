@@ -19,8 +19,8 @@ interface DynamoDBItem {
     TotalMediumSeverity: number;
     TotalHighSeverity: number;
     Report_url: string;
-    CreatedAt: string;
-    UpdatedAt: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export const handler = async (event: any) => {
@@ -88,6 +88,7 @@ export const handler = async (event: any) => {
                 console.log("Starting to process rule results");
 
                 for (const item of ruleResults) {
+                    const testId = item['$']?.['idref'];
                     const result = item['result']?.[0];
                     const severity = item['severity']?.[0];
 
@@ -95,8 +96,6 @@ export const handler = async (event: any) => {
                         totalFailed++;
                     } else if (result === "pass") {
                         totalPassed++;
-                    } else {
-                        totalUnknown++;
                     }
 
                     if (severity === "high") {
@@ -105,6 +104,8 @@ export const handler = async (event: any) => {
                         totalMediumSeverity++;
                     } else if (severity === "low") {
                         totalLowSeverity++;
+                    } else if (severity === "unknown") {
+                        totalUnknown++;
                     }
                 }
 
@@ -122,8 +123,8 @@ export const handler = async (event: any) => {
                     TotalMediumSeverity: totalMediumSeverity,
                     TotalHighSeverity: totalHighSeverity,
                     Report_url: reportUrl,
-                    CreatedAt: currentTime,
-                    UpdatedAt: currentTime
+                    createdAt: currentTime,
+                    updatedAt: currentTime
                 };
 
                 const putParams = {
