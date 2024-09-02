@@ -73,6 +73,7 @@ export default function Home() {
         data.forEach(async (instance) => {
           await client.models.Instance.create({
             InstanceId: instance?.InstanceId!,
+            InstanceName: instance?.InstanceName,
             CommandId: instance?.CommandId,
             PlatformName: instance?.PlatformName,
             PlatformType: instance?.PlatformType,
@@ -113,6 +114,7 @@ export default function Home() {
       for (const instance of newInstances) {
         await client.models.Instance.create({
           InstanceId: instance?.InstanceId!,
+          InstanceName: instance?.InstanceName,
           CommandId: instance?.CommandId,
           PlatformName: instance?.PlatformName,
           PlatformType: instance?.PlatformType,
@@ -170,7 +172,7 @@ export default function Home() {
     const now = new Date();
     const scanDate = new Date(date);
     const timeDifference = now.getTime() - scanDate.getTime();
-    return timeDifference <= 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    return timeDifference <= 24 * 60 * 60 * 1000;
   }
 
   async function getRecentScans() {
@@ -192,25 +194,46 @@ export default function Home() {
       return [];
     }
   }
-  
 
-  // Update scans periodically
+  async function getUncompliantScans() {
+    try {
+      const { data, errors } = await client.models.Instance.list();
+  
+      if (errors) {
+        console.error("Error fetching instances:", errors);
+        return [];
+      }
+  
+      const uncompliantInstances = data.filter(instance => instance.ScanStatus === null);
+  
+      return uncompliantInstances;
+    } catch (error) {
+      console.error("Error fetching uncompliant scans:", error);
+      return [];
+    }
+  }
+  
+  
   useEffect(() => {
     getRecentScans();
     syncInstances();
     fetchFindings();
+    getUncompliantScans().then(uncompliantInstances => {
+      setInstances(uncompliantInstances);
+    });
+  
     const subscription = client.models.Instance.observeQuery().subscribe({
       next: (data) => {
         setInstances(data.items);
       },
       error: (error) => console.error("Subscription error:", error),
     });
-
+  
     return () => {
       subscription.unsubscribe();
     };
   }, []);
-
+  
   return (
     <ContentLayout>
       <SpaceBetween size="l">
@@ -289,8 +312,8 @@ export default function Home() {
                       columnDefinitions={[
                         {
                           id: "instanceId",
-                          header: "Instance ID",
-                          cell: (item) => item.InstanceId,
+                          header: "Instance Name",
+                          cell: (item) => item.InstanceName,
                           isRowHeader: true,
                         },
                         {
@@ -324,8 +347,8 @@ export default function Home() {
                       columnDefinitions={[
                         {
                           id: "instanceId",
-                          header: "Instance ID",
-                          cell: (item) => item.InstanceId,
+                          header: "Instance Name",
+                          cell: (item) => item.InstanceName,
                           isRowHeader: true,
                         },
                         {
