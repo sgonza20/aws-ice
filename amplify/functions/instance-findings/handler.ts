@@ -10,14 +10,17 @@ const SIGNED_URL_EXPIRATION = 3600;
 
 interface DynamoDBItem {
     InstanceId: string;
-    SCAP_Rule_Name: string;
+    TotalFailed: number;
+    TotalPassed: number;
+    TotalUnknown: number;
     Benchmark: string;
     Time: string;
-    Severity: string;
-    Result: string;
+    TotalLowSeverity: number;
+    TotalMediumSeverity: number;
+    TotalHighSeverity: number;
     Report_url: string;
-    createdAt: string;
-    updatedAt: string;
+    CreatedAt: string;
+    UpdatedAt: string;
 }
 
 export const handler = async (event: any) => {
@@ -54,7 +57,6 @@ export const handler = async (event: any) => {
 
                 if (!reports) {
                     console.log("No 'report' found under 'arf:reports'. Parsed XML structure might be different.");
-                    console.log("Keys under 'arf:asset-report-collection':", Object.keys(parsedXml['arf:asset-report-collection']));
                     throw new Error("Unable to locate 'report' in the parsed XML.");
                 }
                 let ruleResults: any[] = [];
@@ -76,49 +78,65 @@ export const handler = async (event: any) => {
                 const instanceId = fileKey.split('/')[0];
                 const benchmark = extractBenchmark(parsedXml);
 
-                let high = 0;
-                let medium = 0;
-                let low = 0;
-                let unknown = 0;
+                let totalFailed = 0;
+                let totalPassed = 0;
+                let totalUnknown = 0;
+                let totalLowSeverity = 0;
+                let totalMediumSeverity = 0;
+                let totalHighSeverity = 0;
 
-                const dynamoDbItems: DynamoDBItem[] = [];
                 console.log("Starting to process rule results");
 
                 for (const item of ruleResults) {
-                    const testId = item['$']?.['idref'];
                     const result = item['result']?.[0];
                     const severity = item['severity']?.[0];
 
-                    if (result === "fail" || result === "pass") {
-                        const reportUrl = await generatePresignedUrl(bucketName, fileKey.replace('.xml', '.html'));
+                    if (result === "fail") {
+                        totalFailed++;
+                    } else if (result === "pass") {
+                        totalPassed++;
+                    } else {
+                        totalUnknown++;
+                    }
 
-                        saveToDynamoDB(dynamoDbItems, instanceId, item, benchmark, reportUrl);
-
-                        if (severity === "high") {
-                            high++;
-                        } else if (severity === "medium") {
-                            medium++;
-                        } else if (severity === "low") {
-                            low++;
-                        } else if (severity === "unknown") {
-                            unknown++;
-                        }
+                    if (severity === "high") {
+                        totalHighSeverity++;
+                    } else if (severity === "medium") {
+                        totalMediumSeverity++;
+                    } else if (severity === "low") {
+                        totalLowSeverity++;
                     }
                 }
 
-                sendMetric(high, 'SCAP High Finding', instanceId);
-                sendMetric(medium, 'SCAP Medium Finding', instanceId);
-                sendMetric(low, 'SCAP Low Finding', instanceId);
+                const reportUrl = await generatePresignedUrl(bucketName, fileKey.replace('.xml', '.html'));
+                const currentTime = new Date().toISOString();
 
-                const batchWritePromises = dynamoDbItems.map(item => {
-                    const params = {
-                        TableName: TABLE_NAME,
-                        Item: item
-                    };
-                    return dynamoDb.put(params).promise();
-                });
+                const dynamoDbItem: DynamoDBItem = {
+                    InstanceId: instanceId,
+                    TotalFailed: totalFailed,
+                    TotalPassed: totalPassed,
+                    TotalUnknown: totalUnknown,
+                    Benchmark: benchmark,
+                    Time: currentTime,
+                    TotalLowSeverity: totalLowSeverity,
+                    TotalMediumSeverity: totalMediumSeverity,
+                    TotalHighSeverity: totalHighSeverity,
+                    Report_url: reportUrl,
+                    CreatedAt: currentTime,
+                    UpdatedAt: currentTime
+                };
 
-                await Promise.all(batchWritePromises);
+                const putParams = {
+                    TableName: TABLE_NAME,
+                    Item: dynamoDbItem
+                };
+
+                await dynamoDb.put(putParams).promise();
+                console.log("DynamoDB item saved successfully");
+
+                sendMetric(totalHighSeverity, 'SCAP High Finding', instanceId);
+                sendMetric(totalMediumSeverity, 'SCAP Medium Finding', instanceId);
+                sendMetric(totalLowSeverity, 'SCAP Low Finding', instanceId);
 
                 console.log("Processing completed successfully.");
             } catch (error) {
@@ -132,29 +150,14 @@ export const handler = async (event: any) => {
     }
 };
 
-function saveToDynamoDB(dynamoDbItems: DynamoDBItem[], instanceId: string, item: any, benchmark: string, reportUrl: string) {
-    const currentTime = new Date().toISOString();
-    dynamoDbItems.push({
-        InstanceId: instanceId,
-        SCAP_Rule_Name: item['$']?.['idref'] || 'unknown',
-        Benchmark: benchmark,
-        Time: item['$']?.['time'] || 'unknown',
-        Severity: item['$']?.['severity'] || 'unknown',
-        Result: item['result']?.[0] || 'unknown',
-        Report_url: reportUrl,
-        createdAt: currentTime,
-        updatedAt: currentTime
-    });
-}
-
-async function generatePresignedUrl(bucketName: string, key: string) {
+async function generatePresignedUrl(bucketName: string, key: string): Promise<string> {
     try {
         const params = {
             Bucket: bucketName,
             Key: key,
             Expires: SIGNED_URL_EXPIRATION
         };
-        const url = s3.getSignedUrlPromise('getObject', params);
+        const url = await s3.getSignedUrlPromise('getObject', params);
         return url;
     } catch (error) {
         console.error("Error generating pre-signed URL:", error);
@@ -174,7 +177,7 @@ function extractBenchmark(parsedXml: any): string {
     for (const report of reports) {
         const testResults = report?.['arf:content']?.[0]?.['TestResult'];
         console.log("Found TestResults:", testResults);
-        
+
         if (testResults) {
             for (const testResult of testResults) {
                 const testResultAttributes = testResult['$'];
