@@ -7,6 +7,7 @@ const schema = a.schema({
   Instance: a
     .model({
       InstanceId: a.string().required(),
+      InstanceName: a.string(),
       PlatformType: a.string(),
       PlatformName: a.string(),
       LastScanTime: a.string(),
@@ -32,6 +33,7 @@ const schema = a.schema({
     .authorization((allow) => [allow.publicApiKey(), allow.authenticated()]),
   InstanceInformation: a.customType({
     InstanceId: a.string(),
+    InstanceName: a.string(),
     PlatformType: a.string(),
     PlatformName: a.string(),
     LastScanTime: a.string(),

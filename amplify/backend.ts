@@ -136,7 +136,10 @@
   const ssmPolicy = new iam.PolicyStatement({
     sid: "SSM",
     effect: iam.Effect.ALLOW,
-    actions: ["ssm:DescribeInstanceInformation"],
+    actions: [
+      "ssm:DescribeInstanceInformation",
+      "ec2:DescribeTags",
+    ],
     resources: ["*"],
   });
 

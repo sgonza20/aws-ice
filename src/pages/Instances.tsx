@@ -56,6 +56,7 @@ export default function EC2Instances() {
         data.forEach(async (instance) => {
           await client.models.Instance.create({
             InstanceId: instance?.InstanceId!,
+            InstanceName: instance?.InstanceName,
             CommandId: instance?.CommandId,
             PlatformName: instance?.PlatformName,
             PlatformType: instance?.PlatformType,
@@ -100,6 +101,7 @@ export default function EC2Instances() {
       for (const instance of newInstances) {
         await client.models.Instance.create({
           InstanceId: instance?.InstanceId!,
+          InstanceName: instance?.InstanceName,
           CommandId: instance?.CommandId,
           PlatformName: instance?.PlatformName,
           PlatformType: instance?.PlatformType,
@@ -238,9 +240,9 @@ export default function EC2Instances() {
       <Table
         columnDefinitions={[
           {
-            id: "instanceId",
-            header: "Instance ID",
-            cell: (item) => item.InstanceId,
+            id: "instanceName",
+            header: "Instance Name",
+            cell: (item) => item.InstanceName,
             isRowHeader: true,
           },
           {

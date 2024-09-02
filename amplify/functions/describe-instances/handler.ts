@@ -4,9 +4,15 @@ import {
   DescribeInstanceInformationCommandOutput,
   InstanceInformation,
 } from "@aws-sdk/client-ssm";
+import {
+  EC2Client,
+  DescribeTagsCommand,
+  DescribeTagsCommandOutput,
+} from "@aws-sdk/client-ec2";
 import type { Schema } from "../../data/resource";
 
 const ssmClient = new SSMClient();
+const ec2Client = new EC2Client();
 
 export const fetchInstances = async () => {
   try {
@@ -28,14 +34,39 @@ export const fetchInstances = async () => {
       nextToken = data.NextToken;
     } while (nextToken);
 
-    return allInstances.map(
-      (instance) =>
-        ({
+    const instancesWithNames = await Promise.all(
+      allInstances.map(async (instance) => {
+        const instanceId = instance.InstanceId;
+
+        const tagsCommand = new DescribeTagsCommand({
+          Filters: [
+            {
+              Name: "resource-id",
+              Values: [instanceId ?? ""],
+            },
+            {
+              Name: "key",
+              Values: ["Name"],
+            },
+          ],
+        });
+
+        const tagsData: DescribeTagsCommandOutput = await ec2Client.send(
+          tagsCommand
+        );
+
+        const nameTag = tagsData.Tags?.find((tag) => tag.Key === "Name");
+
+        return {
           InstanceId: instance.InstanceId,
+          InstanceName: nameTag?.Value || "Unknown",
           PlatformName: instance.PlatformName,
           PlatformType: instance.PlatformType,
-        } as Schema["Instance"]["type"])
+        } as Schema["Instance"]["type"];
+      })
     );
+
+    return instancesWithNames;
   } catch (error) {
     console.error("Error fetching instances:", error);
     throw new Error("Failed to fetch instances");
