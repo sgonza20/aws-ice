@@ -10,11 +10,11 @@ const SIGNED_URL_EXPIRATION = 3600;
 
 interface DynamoDBItem {
     InstanceId: string;
+    Benchmark: string;
+    Time: string;
     TotalFailed: number;
     TotalPassed: number;
     TotalUnknown: number;
-    Benchmark: string;
-    Time: string;
     TotalLowSeverity: number;
     TotalMediumSeverity: number;
     TotalHighSeverity: number;
@@ -113,11 +113,11 @@ export const handler = async (event: any) => {
 
                 const dynamoDbItem: DynamoDBItem = {
                     InstanceId: instanceId,
+                    Benchmark: benchmark,
+                    Time: currentTime,
                     TotalFailed: totalFailed,
                     TotalPassed: totalPassed,
                     TotalUnknown: totalUnknown,
-                    Benchmark: benchmark,
-                    Time: currentTime,
                     TotalLowSeverity: totalLowSeverity,
                     TotalMediumSeverity: totalMediumSeverity,
                     TotalHighSeverity: totalHighSeverity,
