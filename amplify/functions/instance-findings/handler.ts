@@ -92,6 +92,10 @@ export const handler = async (event: any) => {
                     const result = item['result']?.[0];
                     const severity = item['$']?.['severity'];
 
+                    if (result === "notselected") {
+                        continue;
+                    }
+
                     if (result === "fail") {
                         totalFailed++;
                     } else if (result === "pass") {
