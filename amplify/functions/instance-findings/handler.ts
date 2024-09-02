@@ -91,27 +91,28 @@ export const handler = async (event: any) => {
                     const testId = item['$']?.['idref'];
                     const result = item['result']?.[0];
                     const severity = item['$']?.['severity'];
-
+                
                     if (result === "notselected") {
                         continue;
                     }
-
+                
                     if (result === "fail") {
                         totalFailed++;
+                
+                        if (severity === "high") {
+                            totalHighSeverity++;
+                        } else if (severity === "medium") {
+                            totalMediumSeverity++;
+                        } else if (severity === "low") {
+                            totalLowSeverity++;
+                        } else if (severity === "unknown") {
+                            totalUnknown++;
+                        }
                     } else if (result === "pass") {
                         totalPassed++;
                     }
-
-                    if (severity === "high") {
-                        totalHighSeverity++;
-                    } else if (severity === "medium") {
-                        totalMediumSeverity++;
-                    } else if (severity === "low") {
-                        totalLowSeverity++;
-                    } else if (severity === "unknown") {
-                        totalUnknown++;
-                    }
                 }
+                
 
                 const reportUrl = await generatePresignedUrl(bucketName, fileKey.replace('.xml', '.html'));
                 const currentTime = new Date().toISOString();
