@@ -141,7 +141,7 @@ export default function Home() {
       const findingsAggregated: Record<string, Finding> = {};
   
       data.forEach((finding) => {
-        const { InstanceId, Severity } = finding;
+        const { InstanceId, TotalLowSeverity, TotalMediumSeverity, TotalHighSeverity, TotalUnknown } = finding;
   
         if (!findingsAggregated[InstanceId]) {
           findingsAggregated[InstanceId] = {
@@ -153,15 +153,10 @@ export default function Home() {
           };
         }
   
-        if (Severity === "low") {
-          findingsAggregated[InstanceId].totalLow += 1;
-        } else if (Severity === "medium") {
-          findingsAggregated[InstanceId].totalMedium += 1;
-        } else if (Severity === "high") {
-          findingsAggregated[InstanceId].totalHigh += 1;
-        } else if (Severity === "unknown") {
-            findingsAggregated[InstanceId].totalUnknown += 1;
-        }
+        findingsAggregated[InstanceId].totalLow += TotalLowSeverity || 0;
+        findingsAggregated[InstanceId].totalMedium += TotalMediumSeverity || 0;
+        findingsAggregated[InstanceId].totalHigh += TotalHighSeverity || 0;
+        findingsAggregated[InstanceId].totalUnknown += TotalUnknown || 0;
       });
   
       setFindings(Object.values(findingsAggregated));

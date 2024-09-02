@@ -58,32 +58,27 @@ export default function Reports() {
         console.error("Error fetching findings:", errors);
         return;
       }
-
+  
       const findingsAggregated: Record<string, Finding> = {};
-
+  
       data.forEach((finding) => {
         const InstanceId = finding.InstanceId as string;
-        const Result = finding.Result as string;
+        const TotalFailed = finding.TotalFailed as number;
+        const TotalPassed = finding.TotalPassed as number;
         const Report_url = finding.Report_url as string;
         const Benchmark = finding.Benchmark as string;
-
+  
         if (!findingsAggregated[InstanceId]) {
           findingsAggregated[InstanceId] = {
             instanceId: InstanceId,
-            totalFailed: 0,
-            totalPassed: 0,
+            totalFailed: TotalFailed,
+            totalPassed: TotalPassed,
             Report_url: Report_url,
             Benchmark: Benchmark
           };
         }
-
-        if (Result === "fail") {
-          findingsAggregated[InstanceId].totalFailed += 1;
-        } else if (Result === "pass") {
-          findingsAggregated[InstanceId].totalPassed += 1;
-        }
       });
-
+  
       setFindings(Object.values(findingsAggregated));
     } catch (error) {
       console.error("Error fetching findings:", error);
