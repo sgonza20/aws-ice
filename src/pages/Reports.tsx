@@ -168,7 +168,15 @@ export default function Reports() {
             cell: (item) => item.instanceId,
             isRowHeader: true,
           },
-          { 
+          {
+            id: "benchmark",
+            header: "Benchmark",
+            cell: (item) => {
+              const benchmark = benchmarks.find(b => b.value === item.Benchmark);
+              return benchmark ? benchmark.label : item.Benchmark;
+            },
+          },
+          {
             id: "totalPassed", 
             header: "Total Passed", 
             cell: (item) => (
