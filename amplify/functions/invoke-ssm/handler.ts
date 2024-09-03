@@ -7,11 +7,12 @@ import {
 } from "@aws-sdk/client-ssm";
 import {
   IAMClient,
-  ListAttachedRolePoliciesCommand, 
+  ListAttachedRolePoliciesCommand,
   AttachRolePolicyCommand,
   ListPoliciesCommand,
   ListPoliciesCommandOutput,
-  ListAttachedRolePoliciesCommandOutput,
+  GetRoleCommand,
+  GetRoleCommandOutput,
 } from "@aws-sdk/client-iam";
 
 import type { Schema } from "../../data/resource";
@@ -78,32 +79,40 @@ export const handler: Schema["InvokeSSM"]["functionHandler"] = async (
 
     const policyArn = policy.Arn;
 
-    const checkAndAttachPolicy = async (roleName: string) => {
+
+    const getRoleCommand = new GetRoleCommand({ RoleName: RoleName });
+    let roleAttached = false;
+
+    try {
+      const getRoleResponse: GetRoleCommandOutput = await iamClient.send(getRoleCommand);
+      roleAttached = !!getRoleResponse.Role;
+    } catch (error) {
+      console.warn(`Role ${RoleName} not found or error fetching role.`);
+    }
+
+    if (!roleAttached) {
+      // Check if AWSSystemsManagerDefaultEC2InstanceManagementRole exists and attach the policy if not attached
+      const defaultRoleName = "AWSSystemsManagerDefaultEC2InstanceManagementRole";
+
       const listAttachedRolePoliciesCommand = new ListAttachedRolePoliciesCommand({
-        RoleName: roleName,
+        RoleName: defaultRoleName,
       });
-      const listAttachedRolePoliciesResponse: ListAttachedRolePoliciesCommandOutput = await iamClient.send(listAttachedRolePoliciesCommand);
+      const listAttachedRolePoliciesResponse = await iamClient.send(listAttachedRolePoliciesCommand);
 
       const policyAttached = listAttachedRolePoliciesResponse.AttachedPolicies?.some(
-        (attachedPolicy) => attachedPolicy.PolicyArn === policyArn
+        (policy) => policy.PolicyArn === policyArn
       );
+
+      console.log("Policy attached:", policyAttached);
 
       if (!policyAttached) {
         const attachRolePolicyCommand = new AttachRolePolicyCommand({
-          RoleName: roleName,
+          RoleName: defaultRoleName,
           PolicyArn: policyArn,
         });
         await iamClient.send(attachRolePolicyCommand);
-        console.log(`Policy ${policyArn} attached to role ${roleName}`);
+        console.log(`Policy ${policyArn} attached to role ${defaultRoleName}`);
       }
-    };
-
-    await checkAndAttachPolicy(RoleName);
-
-    //Check if the sysems manager default role has the policy
-    const defaultRoleName = "AWSSystemsManagerDefaultEC2InstanceManagementRole";
-    if (RoleName !== defaultRoleName) {
-      await checkAndAttachPolicy(defaultRoleName);
     }
 
     console.log("Invoking SSM document with arguments:", event.arguments);
@@ -118,7 +127,6 @@ export const handler: Schema["InvokeSSM"]["functionHandler"] = async (
 
     const data: SendCommandCommandOutput = await ssmClient.send(command);
     const commandId = data.Command?.CommandId;
-
 
     console.log("Command ID", commandId);
     if (!commandId) {
@@ -136,6 +144,6 @@ export const handler: Schema["InvokeSSM"]["functionHandler"] = async (
     return {
       statusCode: 500,
       body: "Failed to invoke SSM document",
-      }
+    };
   }
 };
