@@ -8,7 +8,7 @@ export default function CustomTopNavigation() {
     <TopNavigation
       identity={{
         href: "/",
-        title: "AWS - Instance Compliance Evaluation",
+        title: "Instance Compliance Evaluation for AWS",
       }}
       utilities={[
         {

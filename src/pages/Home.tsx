@@ -246,7 +246,7 @@ export default function Home() {
         </Box> */}
         <Container>
           <Header variant="h2">Overview</Header>
-          <p>Welcome to AWS - Instance Compliance Evaluation.</p>
+          <p>Welcome to Instance Compliance Evaluation for AWS.</p>
         </Container>
         <Container>
           <Header variant="h2">Features</Header>
