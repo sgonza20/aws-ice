@@ -77,12 +77,25 @@ export const handler: Schema["InvokeSSM"]["functionHandler"] = async (
 
     const policyArn = policy.Arn;
 
-    const listAttachedRolePoliciesCommand = new ListAttachedRolePoliciesCommand({
+    const managedRoleName = "AWSSystemsManagerDefaultEC2InstanceManagementRole";
+
+    const listAttachedManagedRolePoliciesCommand = new ListAttachedRolePoliciesCommand({
+      RoleName: managedRoleName,
+    });
+
+    const listAttachedManagedRolePoliciesResponse = await iamClient.send(listAttachedManagedRolePoliciesCommand);
+
+    const listAttacheddRolePoliciesCommand = new ListAttachedRolePoliciesCommand({
       RoleName: RoleName,
     });
-    const listAttachedRolePoliciesResponse = await iamClient.send(listAttachedRolePoliciesCommand);
+
+    const listAttachedRolePoliciesResponse = await iamClient.send(listAttacheddRolePoliciesCommand);
 
     const policyAttached = listAttachedRolePoliciesResponse.AttachedPolicies?.some(
+      (policy) => policy.PolicyArn === policyArn
+    );
+
+    const policyAttachedManaged = listAttachedManagedRolePoliciesResponse.AttachedPolicies?.some(
       (policy) => policy.PolicyArn === policyArn
     );
 
@@ -95,6 +108,13 @@ export const handler: Schema["InvokeSSM"]["functionHandler"] = async (
       });
       await iamClient.send(attachRolePolicyCommand);
       console.log(`Policy ${policyArn} attached to role ${RoleName}`);
+    } else if (!policyAttachedManaged) {
+      const attachRolePolicyCommand = new AttachRolePolicyCommand({
+        RoleName: managedRoleName,
+        PolicyArn: policyArn,
+      });
+      await iamClient.send(attachRolePolicyCommand);
+      console.log(`Policy ${policyArn} attached to role ${managedRoleName}`);
     }
 
     console.log("Invoking SSM document with arguments:", event.arguments);
