@@ -21,16 +21,17 @@ export default function CustomSideNavigation() {
       items={[
         {
           type: "section",
-          text: "Instances",
+          text: "Scans",
           items: [
-            { type: "link", text: "Home", href: "/instances" },
+            { type: "link", text: "Scans by Instance", href: "/instances" },
+            { type: "link", text: "Scans by Platform", href: "/instancesPlatform" },
           ],
         },
         {
           type: "section",
           text: "Reports",
           items: [
-            { type: "link", text: "Home", href: "/reports" },
+            { type: "link", text: "Findings by Instance", href: "/reports" },
           ],
         },
         {
