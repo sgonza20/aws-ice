@@ -135,10 +135,7 @@ export default function Reports() {
     <ContentLayout>
       <Header
         variant="h1"
-        actions={
-          <SpaceBetween size="xs" direction="horizontal">
-          </SpaceBetween>
-        }
+        actions={<SpaceBetween size="xs" direction="horizontal"></SpaceBetween>}
       >
         Findings
       </Header>
@@ -152,17 +149,21 @@ export default function Reports() {
           />
         </FormField>
         <FormField label="Filter by Benchmark">
-        <Select
-          selectedOption={benchmarks.find(b => b.value === selectedBenchmark) ?? null}
-          onChange={({ detail }) => setSelectedBenchmark(detail.selectedOption?.value || '')}
-          options={benchmarks}
-          placeholder="Select a benchmark"
-        />
+          <Select
+            selectedOption={
+              benchmarks.find((b) => b.value === selectedBenchmark) ?? null
+            }
+            onChange={({ detail }) =>
+              setSelectedBenchmark(detail.selectedOption?.value || "")
+            }
+            options={benchmarks}
+            placeholder="Select a benchmark"
+          />
         </FormField>
       </SpaceBetween>
       <Table
         columnDefinitions={[
-          { 
+          {
             id: "instanceId",
             header: "Instance Name",
             cell: (item) => item.instanceId,
@@ -172,39 +173,50 @@ export default function Reports() {
             id: "benchmark",
             header: "Benchmark",
             cell: (item) => {
-              const benchmark = benchmarks.find(b => b.value === item.Benchmark);
+              const benchmark = benchmarks.find(
+                (b) => b.value === item.Benchmark
+              );
               return benchmark ? benchmark.label : item.Benchmark;
             },
           },
           {
-            id: "totalPassed", 
-            header: "Total Passed", 
+            id: "totalPassed",
+            header: "Total Passed",
             cell: (item) => (
-              <StatusIndicator 
-                type="success">{item.totalPassed}
+              <StatusIndicator type="success">
+                {item.totalPassed}
               </StatusIndicator>
             ),
           },
-          { 
-            id: "totalFailed", 
-            header: "Total Failed", 
+          {
+            id: "totalFailed",
+            header: "Total Failed",
             cell: (item) => (
-              <StatusIndicator 
-                type="error">{item.totalFailed}
-              </StatusIndicator>
+              <StatusIndicator type="error">{item.totalFailed}</StatusIndicator>
             ),
           },
-          { 
+          {
             id: "reportUrl",
-            header: "View Report",
+            header: "Report Actions",
             cell: (item) => (
-              <Button
-                href={item.Report_url}
-                target="_blank"
-                variant="link"
-              >
-                View
-              </Button>
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button
+                  href={item.Report_url}
+                  target="_blank"
+                  variant="inline-link"
+                  iconName="file"
+                >
+                  View
+                </Button>
+                <Button
+                  href={item.Report_url}
+                  download
+                  variant="inline-link"
+                  iconName="download"
+                >
+                  Download
+                </Button>
+              </SpaceBetween>
             ),
           },
         ]}
