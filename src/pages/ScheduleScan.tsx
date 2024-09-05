@@ -13,7 +13,7 @@ import {
   Form,
   Icon,
   FormField,
-  Select
+  Select,
 } from "@cloudscape-design/components";
 import TextFilter from "@cloudscape-design/components/text-filter";
 import { Schema } from "../../amplify/data/resource";
@@ -26,19 +26,23 @@ interface Option {
   value: string;
 }
 
-export default function EC2Instances() {
-  const [instances, setInstances] = useState<Array<Schema["Instance"]["type"]>>([]);
-  const [selectedInstances, setSelectedInstances] = useState<Array<Schema["Instance"]["type"]>>([]);
+export default function ScheduleScan() {
+  const [instances, setInstances] = useState<Array<Schema["Instance"]["type"]>>(
+    []
+  );
+  const [selectedInstances, setSelectedInstances] = useState<
+    Array<Schema["Instance"]["type"]>
+  >([]);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isRunModalVisible, setIsRunModalVisible] = useState(false);
   const [selectedOS, setSelectedOS] = useState<Option | null>(null);
-  const [selectedBenchmark, setSelectedBenchmark] = useState<Option | null>(null);
+  const [selectedBenchmark, setSelectedBenchmark] = useState<Option | null>(
+    null
+  );
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [filteringText, setFilteringText] = useState('');
+  const [filteringText, setFilteringText] = useState("");
   const itemsPerPage = 10;
-
-
 
   async function getInstances() {
     setIsLoading(true);
@@ -75,7 +79,6 @@ export default function EC2Instances() {
     }
   }
 
-
   async function syncInstances() {
     setIsLoading(true);
     try {
@@ -84,8 +87,10 @@ export default function EC2Instances() {
         console.error("Error fetching instances:", "No instances found");
         return;
       }
-      const instanceIds = fetchedInstances.map((instance) => instance?.InstanceId);
-      
+      const instanceIds = fetchedInstances.map(
+        (instance) => instance?.InstanceId
+      );
+
       const { data, errors } = await client.models.Instance.list();
 
       if (errors) {
@@ -93,11 +98,18 @@ export default function EC2Instances() {
         return;
       }
 
-      const existingInstances = data.filter(instance => instanceIds.includes(instance.InstanceId));
-      
+      const existingInstances = data.filter((instance) =>
+        instanceIds.includes(instance.InstanceId)
+      );
+
       setInstances(existingInstances);
 
-      const newInstances = fetchedInstances.filter(instance => !existingInstances.some(existing => existing.InstanceId === instance?.InstanceId));
+      const newInstances = fetchedInstances.filter(
+        (instance) =>
+          !existingInstances.some(
+            (existing) => existing.InstanceId === instance?.InstanceId
+          )
+      );
 
       for (const instance of newInstances) {
         await client.models.Instance.create({
@@ -118,16 +130,17 @@ export default function EC2Instances() {
     }
   }
 
-  
-
-  async function deleteInstance(InstanceID: string){
-
-    client.models.Instance.delete({InstanceId: InstanceID});
+  async function deleteInstance(InstanceID: string) {
+    client.models.Instance.delete({ InstanceId: InstanceID });
     syncInstances();
-  
   }
 
-  async function InvokeScan(InstanceID: string, OS: string, Benchmark: string, RoleName: string) {
+  async function InvokeScan(
+    InstanceID: string,
+    OS: string,
+    Benchmark: string,
+    RoleName: string
+  ) {
     try {
       const { data, errors } = await client.queries.InvokeSSM({
         InstanceId: InstanceID,
@@ -136,20 +149,20 @@ export default function EC2Instances() {
         Benchmark: Benchmark,
       });
       console.log(data, errors);
-    
+
       if (errors) {
         console.error("Error invoking SSM:", errors);
         return;
       }
-    
+
       if (data?.statusCode === 200) {
-        if (typeof data.body === 'string') {
+        if (typeof data.body === "string") {
           const commandId = data.body;
           await client.models.Instance.update({
             InstanceId: InstanceID,
             LastScanTime: new Date().toISOString(),
             CommandId: commandId,
-            ScanStatus: 'InProgress',
+            ScanStatus: "InProgress",
           });
         }
       }
@@ -158,37 +171,38 @@ export default function EC2Instances() {
       console.error("Error in InvokeScan:", error);
     }
   }
-  
-  
 
   function confirmScan() {
     if (selectedOS && selectedBenchmark) {
       selectedInstances.forEach((item) => {
-        if (typeof item.RoleName === 'string') {
-          InvokeScan(item.InstanceId, selectedOS.value, selectedBenchmark.value, item.RoleName);
+        if (typeof item.RoleName === "string") {
+          InvokeScan(
+            item.InstanceId,
+            selectedOS.value,
+            selectedBenchmark.value,
+            item.RoleName
+          );
         } else {
-          console.error('RoleName is not a string:', item.RoleName);
+          console.error("RoleName is not a string:", item.RoleName);
         }
       });
       console.log(selectedInstances);
       setSelectedInstances([]);
       setIsRunModalVisible(false);
     } else {
-      alert('Please select both OS and Benchmark.');
+      alert("Please select both OS and Benchmark.");
     }
   }
 
   function confirmDelete() {
     setIsDeleteModalVisible(false);
-    selectedInstances.forEach((item) =>
-    deleteInstance(item.InstanceId)
-    );
+    selectedInstances.forEach((item) => deleteInstance(item.InstanceId));
   }
 
-  const isOption = (option: any): option is Option => 
-    typeof option.label === 'string' && typeof option.value === 'string';
+  const isOption = (option: any): option is Option =>
+    typeof option.label === "string" && typeof option.value === "string";
 
-  const filteredInstances = instances.filter(instance =>
+  const filteredInstances = instances.filter((instance) =>
     instance.InstanceName!.toLowerCase().includes(filteringText.toLowerCase())
   );
 
@@ -205,12 +219,11 @@ export default function EC2Instances() {
       },
       error: (error) => console.error("Subscription error:", error),
     });
-  
+
     return () => {
       subscription.unsubscribe();
     };
   }, []);
-    
 
   return (
     <ContentLayout>
@@ -218,25 +231,22 @@ export default function EC2Instances() {
         variant="h1"
         actions={
           <SpaceBetween size="xs" direction="horizontal">
-            <Button
-              onClick={syncInstances}
-              ariaLabel="Refresh Instances"
-            >
-              {isLoading ? (
-                <Spinner />
-              ) : (
-                <Icon name="refresh" />
-              )}
+            <Button onClick={syncInstances} ariaLabel="Refresh Instances">
+              {isLoading ? <Spinner /> : <Icon name="refresh" />}
               {!isLoading}
             </Button>
             <Button
-              onClick={() => selectedInstances.length > 0 && setIsDeleteModalVisible(true)}
+              onClick={() =>
+                selectedInstances.length > 0 && setIsDeleteModalVisible(true)
+              }
               disabled={selectedInstances.length === 0}
             >
               Delete
             </Button>
             <Button
-              onClick={() => selectedInstances.length > 0 && setIsRunModalVisible(true)}
+              onClick={() =>
+                selectedInstances.length > 0 && setIsRunModalVisible(true)
+              }
               disabled={selectedInstances.length === 0}
             >
               Run Scan
@@ -270,7 +280,10 @@ export default function EC2Instances() {
           {
             id: "lastScanTime",
             header: "Last Scan Inititation",
-            cell: (item) => item.LastScanTime ? new Date(item.LastScanTime).toLocaleString() : 'N/A',
+            cell: (item) =>
+              item.LastScanTime
+                ? new Date(item.LastScanTime).toLocaleString()
+                : "N/A",
           },
           {
             id: "CommandId",
@@ -281,19 +294,31 @@ export default function EC2Instances() {
             id: "scanStatus",
             header: "Scan Status",
             cell: (item) => (
-              <StatusIndicator type={item.ScanStatus === 'Success' ? 'success' : item.ScanStatus === 'Failed' ? 'error' : 'info'}>
-                {item.ScanStatus || 'N/A'}
+              <StatusIndicator
+                type={
+                  item.ScanStatus === "Success"
+                    ? "success"
+                    : item.ScanStatus === "Failed"
+                    ? "error"
+                    : "info"
+                }
+              >
+                {item.ScanStatus || "N/A"}
               </StatusIndicator>
             ),
           },
         ]}
         items={paginatedInstances}
         selectedItems={selectedInstances}
-        onSelectionChange={({ detail }) => setSelectedInstances(detail.selectedItems)}
+        onSelectionChange={({ detail }) =>
+          setSelectedInstances(detail.selectedItems)
+        }
         pagination={
           <Pagination
             currentPageIndex={currentPageIndex}
-            onChange={({ detail }) => setCurrentPageIndex(detail.currentPageIndex)}
+            onChange={({ detail }) =>
+              setCurrentPageIndex(detail.currentPageIndex)
+            }
             pagesCount={Math.ceil(filteredInstances.length / 10)}
           />
         }
@@ -318,7 +343,10 @@ export default function EC2Instances() {
         footer={
           <Box float="right">
             <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={() => setIsDeleteModalVisible(false)}>
+              <Button
+                variant="link"
+                onClick={() => setIsDeleteModalVisible(false)}
+              >
                 Cancel
               </Button>
               <Button variant="primary" onClick={confirmDelete}>
@@ -328,7 +356,8 @@ export default function EC2Instances() {
           </Box>
         }
       >
-        Are you sure you want to delete the selected instances? This action cannot be undone.
+        Are you sure you want to delete the selected instances? This action
+        cannot be undone.
       </Modal>
       <Modal
         onDismiss={() => setIsRunModalVisible(false)}
@@ -338,7 +367,10 @@ export default function EC2Instances() {
         footer={
           <Box float="right">
             <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={() => setIsRunModalVisible(false)}>
+              <Button
+                variant="link"
+                onClick={() => setIsRunModalVisible(false)}
+              >
                 Cancel
               </Button>
               <Button variant="primary" onClick={confirmScan}>
@@ -360,33 +392,78 @@ export default function EC2Instances() {
                 }}
                 options={[
                   { label: "Amazon Linux 2", value: "ssg-amzn2-ds.xml" },
-                  { label: "Red Hat Enterprise Linux 7", value: "ssg-rhel7-ds.xml" },
+                  {
+                    label: "Red Hat Enterprise Linux 7",
+                    value: "ssg-rhel7-ds.xml",
+                  },
                 ]}
               />
             </FormField>
             <FormField label="Select Benchmark">
-            <Select
-              selectedOption={selectedBenchmark}
-              onChange={({ detail }) => {
+              <Select
+                selectedOption={selectedBenchmark}
+                onChange={({ detail }) => {
                   if (isOption(detail.selectedOption)) {
                     setSelectedBenchmark(detail.selectedOption);
                   }
                 }}
                 options={[
-                { label: "DISA STIG", value: "xccdf_org.ssgproject.content_profile_stig-rhel7-disa" },
-                { label: "C2S", value: "xccdf_org.ssgproject.content_profile_C2S" },
-                { label: "CSCF RHEL6 MLS Core Baseline", value: "xccdf_org.ssgproject.content_profile_CSCF-RHEL6-MLS" },
-                { label: "PCI-DSS v3 Control Baseline", value: "xccdf_org.ssgproject.content_profile_pci-dss" },
-                { label: "Standard System Security", value: "xccdf_org.ssgproject.content_profile_standard" },
-                { label: "United States Government Configuration Baseline (USGCB)", value: "xccdf_org.ssgproject.content_profile_usgcb-rhel6-server" },
-                { label: "Server Baseline", value: "xccdf_org.ssgproject.content_profile_server" },
-                { label: "Red Hat Corporate Profile for Certified Cloud Providers (RH CCP)", value: "xccdf_org.ssgproject.content_profile_rht-ccp" },
-                { label: "CNSSI 1253 Low/Low/Low Control Baseline", value: "xccdf_org.ssgproject.content_profile_nist-CL-IL-AL" },
-                { label: "FTP Server Profile (vsftpd)", value: "xccdf_org.ssgproject.content_profile_ftp-server" },
-                { label: "FISMA Medium", value: "xccdf_org.ssgproject.content_profile_fisma-medium-rhel6-server" },
-                { label: "Desktop Baseline", value: "xccdf_org.ssgproject.content_profile_desktop" },
-              ]}
-            />
+                  {
+                    label: "DISA STIG",
+                    value:
+                      "xccdf_org.ssgproject.content_profile_stig-rhel7-disa",
+                  },
+                  {
+                    label: "C2S",
+                    value: "xccdf_org.ssgproject.content_profile_C2S",
+                  },
+                  {
+                    label: "CSCF RHEL6 MLS Core Baseline",
+                    value:
+                      "xccdf_org.ssgproject.content_profile_CSCF-RHEL6-MLS",
+                  },
+                  {
+                    label: "PCI-DSS v3 Control Baseline",
+                    value: "xccdf_org.ssgproject.content_profile_pci-dss",
+                  },
+                  {
+                    label: "Standard System Security",
+                    value: "xccdf_org.ssgproject.content_profile_standard",
+                  },
+                  {
+                    label:
+                      "United States Government Configuration Baseline (USGCB)",
+                    value:
+                      "xccdf_org.ssgproject.content_profile_usgcb-rhel6-server",
+                  },
+                  {
+                    label: "Server Baseline",
+                    value: "xccdf_org.ssgproject.content_profile_server",
+                  },
+                  {
+                    label:
+                      "Red Hat Corporate Profile for Certified Cloud Providers (RH CCP)",
+                    value: "xccdf_org.ssgproject.content_profile_rht-ccp",
+                  },
+                  {
+                    label: "CNSSI 1253 Low/Low/Low Control Baseline",
+                    value: "xccdf_org.ssgproject.content_profile_nist-CL-IL-AL",
+                  },
+                  {
+                    label: "FTP Server Profile (vsftpd)",
+                    value: "xccdf_org.ssgproject.content_profile_ftp-server",
+                  },
+                  {
+                    label: "FISMA Medium",
+                    value:
+                      "xccdf_org.ssgproject.content_profile_fisma-medium-rhel6-server",
+                  },
+                  {
+                    label: "Desktop Baseline",
+                    value: "xccdf_org.ssgproject.content_profile_desktop",
+                  },
+                ]}
+              />
             </FormField>
           </Form>
         </Box>
