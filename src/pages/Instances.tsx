@@ -13,7 +13,9 @@ import {
   Form,
   Icon,
   FormField,
-  Select
+  Select,
+  AppLayout,
+  HelpPanel
 } from "@cloudscape-design/components";
 import TextFilter from "@cloudscape-design/components/text-filter";
 import { Schema } from "../../amplify/data/resource";
@@ -27,6 +29,7 @@ interface Option {
 }
 
 export default function EC2Instances() {
+  const [toolsOpen, setToolsOpen] = useState(true);
   const [instances, setInstances] = useState<Array<Schema["Instance"]["type"]>>([]);
   const [selectedInstances, setSelectedInstances] = useState<Array<Schema["Instance"]["type"]>>([]);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
@@ -212,185 +215,197 @@ export default function EC2Instances() {
   }, []);
     
 
-  return (
-    <ContentLayout>
-      <Header
-        variant="h1"
-        actions={
-          <SpaceBetween size="xs" direction="horizontal">
-            <Button
-              onClick={syncInstances}
-              ariaLabel="Refresh Instances"
-            >
-              {isLoading ? (
-                <Spinner />
-              ) : (
-                <Icon name="refresh" />
-              )}
-              {!isLoading}
-            </Button>
-            <Button
-              onClick={() => selectedInstances.length > 0 && setIsDeleteModalVisible(true)}
-              disabled={selectedInstances.length === 0}
-            >
-              Delete
-            </Button>
-            <Button
-              onClick={() => selectedInstances.length > 0 && setIsRunModalVisible(true)}
-              disabled={selectedInstances.length === 0}
-            >
-              Run Scan
-            </Button>
-          </SpaceBetween>
-        }
-      >
-        Instances ({instances.length})
-      </Header>
-      <FormField label="Search by Instance Name">
-        <TextFilter
-          filteringText={filteringText}
-          filteringPlaceholder="Find instances"
-          filteringAriaLabel="Filter instances"
-          onChange={({ detail }) => setFilteringText(detail.filteringText)}
-        />
-      </FormField>
-      <Table
-        columnDefinitions={[
-          {
-            id: "instanceName",
-            header: "Instance Name",
-            cell: (item) => item.InstanceName,
-            isRowHeader: true,
-          },
-          {
-            id: "platformName",
-            header: "Platform Name",
-            cell: (item) => item.PlatformName || undefined,
-          },
-          {
-            id: "lastScanTime",
-            header: "Last Scan Inititation",
-            cell: (item) => item.LastScanTime ? new Date(item.LastScanTime).toLocaleString() : 'N/A',
-          },
-          {
-            id: "CommandId",
-            header: "Run Command ID",
-            cell: (item) => item.CommandId || undefined,
-          },
-          {
-            id: "scanStatus",
-            header: "Scan Status",
-            cell: (item) => (
-              <StatusIndicator type={item.ScanStatus === 'Success' ? 'success' : item.ScanStatus === 'Failed' ? 'error' : 'info'}>
-                {item.ScanStatus || 'N/A'}
-              </StatusIndicator>
-            ),
-          },
-        ]}
-        items={paginatedInstances}
-        selectedItems={selectedInstances}
-        onSelectionChange={({ detail }) => setSelectedInstances(detail.selectedItems)}
-        pagination={
-          <Pagination
-            currentPageIndex={currentPageIndex}
-            onChange={({ detail }) => setCurrentPageIndex(detail.currentPageIndex)}
-            pagesCount={Math.ceil(filteredInstances.length / 10)}
-          />
-        }
-        empty={
-          <Box margin={{ vertical: "xs" }} textAlign="center" color="inherit">
-            <SpaceBetween size="m">
-              <b>No EC2 Instances</b>
-            </SpaceBetween>
-          </Box>
-        }
-        selectionType="multi"
-        variant="full-page"
-        stickyHeader={true}
-        resizableColumns={true}
-        loadingText="Loading instances"
-      />
-      <Modal
-        onDismiss={() => setIsDeleteModalVisible(false)}
-        visible={isDeleteModalVisible}
-        closeAriaLabel="Close"
-        header="Confirm Deletion"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={() => setIsDeleteModalVisible(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={confirmDelete}>
-                Delete
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        Are you sure you want to delete the selected instances? This action cannot be undone.
-      </Modal>
-      <Modal
-        onDismiss={() => setIsRunModalVisible(false)}
-        visible={isRunModalVisible}
-        closeAriaLabel="Close"
-        header="Run OpenSCAP Scan"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={() => setIsRunModalVisible(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={confirmScan}>
-                Run
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <Box padding="l">
-          <Form>
-            <FormField label="Select OS">
-              <Select
-                selectedOption={selectedOS}
-                onChange={({ detail }) => {
-                  if (isOption(detail.selectedOption)) {
-                    setSelectedOS(detail.selectedOption);
-                  }
-                }}
-                options={[
-                  { label: "Amazon Linux 2", value: "ssg-amzn2-ds.xml" },
-                  { label: "Red Hat Enterprise Linux 7", value: "ssg-rhel7-ds.xml" },
-                ]}
-              />
-            </FormField>
-            <FormField label="Select Benchmark">
-            <Select
-              selectedOption={selectedBenchmark}
-              onChange={({ detail }) => {
-                  if (isOption(detail.selectedOption)) {
-                    setSelectedBenchmark(detail.selectedOption);
-                  }
-                }}
-                options={[
-                { label: "DISA STIG", value: "xccdf_org.ssgproject.content_profile_stig-rhel7-disa" },
-                { label: "C2S", value: "xccdf_org.ssgproject.content_profile_C2S" },
-                { label: "CSCF RHEL6 MLS Core Baseline", value: "xccdf_org.ssgproject.content_profile_CSCF-RHEL6-MLS" },
-                { label: "PCI-DSS v3 Control Baseline", value: "xccdf_org.ssgproject.content_profile_pci-dss" },
-                { label: "Standard System Security", value: "xccdf_org.ssgproject.content_profile_standard" },
-                { label: "United States Government Configuration Baseline (USGCB)", value: "xccdf_org.ssgproject.content_profile_usgcb-rhel6-server" },
-                { label: "Server Baseline", value: "xccdf_org.ssgproject.content_profile_server" },
-                { label: "Red Hat Corporate Profile for Certified Cloud Providers (RH CCP)", value: "xccdf_org.ssgproject.content_profile_rht-ccp" },
-                { label: "CNSSI 1253 Low/Low/Low Control Baseline", value: "xccdf_org.ssgproject.content_profile_nist-CL-IL-AL" },
-                { label: "FTP Server Profile (vsftpd)", value: "xccdf_org.ssgproject.content_profile_ftp-server" },
-                { label: "FISMA Medium", value: "xccdf_org.ssgproject.content_profile_fisma-medium-rhel6-server" },
-                { label: "Desktop Baseline", value: "xccdf_org.ssgproject.content_profile_desktop" },
-              ]}
+return (
+    <AppLayout
+      onToolsChange={({ detail }) => setToolsOpen(detail.open)}
+      toolsOpen={toolsOpen}
+      navigationHide
+      tools={
+        <HelpPanel header={<h2>Help</h2>}>
+          TODO
+        </HelpPanel>
+      }
+      content={
+        <ContentLayout>
+          <Header
+            variant="h1"
+            actions={
+              <SpaceBetween size="xs" direction="horizontal">
+                <Button
+                  onClick={syncInstances}
+                  ariaLabel="Refresh Instances"
+                >
+                  {isLoading ? (
+                    <Spinner />
+                  ) : (
+                    <Icon name="refresh" />
+                  )}
+                  {!isLoading}
+                </Button>
+                <Button
+                  onClick={() => selectedInstances.length > 0 && setIsDeleteModalVisible(true)}
+                  disabled={selectedInstances.length === 0}
+                >
+                  Delete
+                </Button>
+                <Button
+                  onClick={() => selectedInstances.length > 0 && setIsRunModalVisible(true)}
+                  disabled={selectedInstances.length === 0}
+                >
+                  Run Scan
+                </Button>
+              </SpaceBetween>
+            }
+          >
+            Instances ({instances.length})
+          </Header>
+          <FormField label="Search by Instance Name">
+            <TextFilter
+              filteringText={filteringText}
+              filteringPlaceholder="Find instances"
+              filteringAriaLabel="Filter instances"
+              onChange={({ detail }) => setFilteringText(detail.filteringText)}
             />
-            </FormField>
-          </Form>
-        </Box>
-      </Modal>
-    </ContentLayout>
+          </FormField>
+          <Table
+            columnDefinitions={[
+              {
+                id: "instanceName",
+                header: "Instance Name",
+                cell: (item) => item.InstanceName,
+                isRowHeader: true,
+              },
+              {
+                id: "platformName",
+                header: "Platform Name",
+                cell: (item) => item.PlatformName || undefined,
+              },
+              {
+                id: "lastScanTime",
+                header: "Last Scan Inititation",
+                cell: (item) => item.LastScanTime ? new Date(item.LastScanTime).toLocaleString() : 'N/A',
+              },
+              {
+                id: "CommandId",
+                header: "Run Command ID",
+                cell: (item) => item.CommandId || undefined,
+              },
+              {
+                id: "scanStatus",
+                header: "Scan Status",
+                cell: (item) => (
+                  <StatusIndicator type={item.ScanStatus === 'Success' ? 'success' : item.ScanStatus === 'Failed' ? 'error' : 'info'}>
+                    {item.ScanStatus || 'N/A'}
+                  </StatusIndicator>
+                ),
+              },
+            ]}
+            items={paginatedInstances}
+            selectedItems={selectedInstances}
+            onSelectionChange={({ detail }) => setSelectedInstances(detail.selectedItems)}
+            pagination={
+              <Pagination
+                currentPageIndex={currentPageIndex}
+                onChange={({ detail }) => setCurrentPageIndex(detail.currentPageIndex)}
+                pagesCount={Math.ceil(filteredInstances.length / 10)}
+              />
+            }
+            empty={
+              <Box margin={{ vertical: "xs" }} textAlign="center" color="inherit">
+                <SpaceBetween size="m">
+                  <b>No EC2 Instances</b>
+                </SpaceBetween>
+              </Box>
+            }
+            selectionType="multi"
+            variant="full-page"
+            stickyHeader={true}
+            resizableColumns={true}
+            loadingText="Loading instances"
+          />
+          <Modal
+            onDismiss={() => setIsDeleteModalVisible(false)}
+            visible={isDeleteModalVisible}
+            closeAriaLabel="Close"
+            header="Confirm Deletion"
+            footer={
+              <Box float="right">
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Button variant="link" onClick={() => setIsDeleteModalVisible(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="primary" onClick={confirmDelete}>
+                    Delete
+                  </Button>
+                </SpaceBetween>
+              </Box>
+            }
+          >
+            Are you sure you want to delete the selected instances? This action cannot be undone.
+          </Modal>
+          <Modal
+            onDismiss={() => setIsRunModalVisible(false)}
+            visible={isRunModalVisible}
+            closeAriaLabel="Close"
+            header="Run OpenSCAP Scan"
+            footer={
+              <Box float="right">
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Button variant="link" onClick={() => setIsRunModalVisible(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="primary" onClick={confirmScan}>
+                    Run
+                  </Button>
+                </SpaceBetween>
+              </Box>
+            }
+          >
+            <Box padding="l">
+              <Form>
+                <FormField label="Select OS">
+                  <Select
+                    selectedOption={selectedOS}
+                    onChange={({ detail }) => {
+                      if (isOption(detail.selectedOption)) {
+                        setSelectedOS(detail.selectedOption);
+                      }
+                    }}
+                    options={[
+                      { label: "Amazon Linux 2", value: "ssg-amzn2-ds.xml" },
+                      { label: "Red Hat Enterprise Linux 7", value: "ssg-rhel7-ds.xml" },
+                    ]}
+                  />
+                </FormField>
+                <FormField label="Select Benchmark">
+                  <Select
+                    selectedOption={selectedBenchmark}
+                    onChange={({ detail }) => {
+                        if (isOption(detail.selectedOption)) {
+                          setSelectedBenchmark(detail.selectedOption);
+                        }
+                      }}
+                    options={[
+                      { label: "DISA STIG", value: "xccdf_org.ssgproject.content_profile_stig-rhel7-disa" },
+                      { label: "C2S", value: "xccdf_org.ssgproject.content_profile_C2S" },
+                      { label: "CSCF RHEL6 MLS Core Baseline", value: "xccdf_org.ssgproject.content_profile_CSCF-RHEL6-MLS" },
+                      { label: "PCI-DSS v3 Control Baseline", value: "xccdf_org.ssgproject.content_profile_pci-dss" },
+                      { label: "Standard System Security", value: "xccdf_org.ssgproject.content_profile_standard" },
+                      { label: "United States Government Configuration Baseline (USGCB)", value: "xccdf_org.ssgproject.content_profile_usgcb-rhel6-server" },
+                      { label: "Server Baseline", value: "xccdf_org.ssgproject.content_profile_server" },
+                      { label: "Red Hat Corporate Profile for Certified Cloud Providers (RH CCP)", value: "xccdf_org.ssgproject.content_profile_rht-ccp" },
+                      { label: "CNSSI 1253 Low/Low/Low Control Baseline", value: "xccdf_org.ssgproject.content_profile_nist-CL-IL-AL" },
+                      { label: "FTP Server Profile (vsftpd)", value: "xccdf_org.ssgproject.content_profile_ftp-server" },
+                      { label: "FISMA Medium", value: "xccdf_org.ssgproject.content_profile_fisma-medium-rhel6-server" },
+                      { label: "Desktop Baseline", value: "xccdf_org.ssgproject.content_profile_desktop" },
+                    ]}
+                  />
+                </FormField>
+              </Form>
+            </Box>
+          </Modal>
+        </ContentLayout>
+      }
+    />
   );
 }
