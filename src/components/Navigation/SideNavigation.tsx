@@ -21,10 +21,14 @@ export default function CustomSideNavigation() {
       items={[
         {
           type: "section",
-          text: "Scans",
+          text: "Scan",
           items: [
-            { type: "link", text: "Scans by Instance", href: "/instances" },
-            { type: "link", text: "Scans by Platform", href: "/instancesPlatform" },
+            { type: "link", text: "Scan by Instance", href: "/instances" },
+            {
+              type: "link",
+              text: "Scan by Platform",
+              href: "/instancesPlatform",
+            },
           ],
         },
         {
@@ -37,9 +41,7 @@ export default function CustomSideNavigation() {
         {
           type: "section",
           text: "Support",
-          items: [
-            { type: "link", text: " Home", href: "/support" },
-          ],
+          items: [{ type: "link", text: " Home", href: "/support" }],
         },
       ]}
     />
