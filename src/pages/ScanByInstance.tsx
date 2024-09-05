@@ -62,7 +62,7 @@ export default function ScanByInstance() {
             InstanceId: instance?.InstanceId!,
             InstanceName: instance?.InstanceName,
             RoleName: instance?.RoleName,
-            CommandId: instance?.CommandId,
+            LastScanRunCommandId: instance?.LastScanRunCommandId,
             PlatformName: instance?.PlatformName,
             PlatformType: instance?.PlatformType,
             LastScanTime: instance?.LastScanTime,
@@ -116,7 +116,7 @@ export default function ScanByInstance() {
           InstanceId: instance?.InstanceId!,
           InstanceName: instance?.InstanceName,
           RoleName: instance?.RoleName,
-          CommandId: instance?.CommandId,
+          LastScanRunCommandId: instance?.LastScanRunCommandId,
           PlatformName: instance?.PlatformName,
           PlatformType: instance?.PlatformType,
           LastScanTime: instance?.LastScanTime,
@@ -161,7 +161,8 @@ export default function ScanByInstance() {
           await client.models.Instance.update({
             InstanceId: InstanceID,
             LastScanTime: new Date().toISOString(),
-            CommandId: commandId,
+            LastScanBenchmark: Benchmark,
+            LastScanRunCommandId: commandId,
             ScanStatus: "InProgress",
           });
         }
@@ -286,9 +287,14 @@ export default function ScanByInstance() {
                 : "N/A",
           },
           {
-            id: "CommandId",
+            id: "lastScanBenchmark",
+            header: "Benchmark",
+            cell: (item) => item.LastScanBenchmark,
+          },
+          {
+            id: "LastScanRunCommandID",
             header: "Run Command ID",
-            cell: (item) => item.CommandId || undefined,
+            cell: (item) => item.LastScanRunCommandId || undefined,
           },
           {
             id: "scanStatus",

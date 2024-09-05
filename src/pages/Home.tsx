@@ -78,7 +78,7 @@ export default function Home() {
           await client.models.Instance.create({
             InstanceId: instance?.InstanceId!,
             InstanceName: instance?.InstanceName,
-            CommandId: instance?.CommandId,
+            LastScanRunCommandId: instance?.LastScanRunCommandId,
             PlatformName: instance?.PlatformName,
             PlatformType: instance?.PlatformType,
             LastScanTime: instance?.LastScanTime,
@@ -93,15 +93,17 @@ export default function Home() {
     }
   }
 
-    async function syncInstances() {
+  async function syncInstances() {
     try {
       const fetchedInstances = await getInstances();
       if (!fetchedInstances) {
         console.error("Error fetching instances:", "No instances found");
         return;
       }
-      const instanceIds = fetchedInstances.map((instance) => instance?.InstanceId);
-      
+      const instanceIds = fetchedInstances.map(
+        (instance) => instance?.InstanceId
+      );
+
       const { data, errors } = await client.models.Instance.list();
 
       if (errors) {
@@ -109,17 +111,24 @@ export default function Home() {
         return;
       }
 
-      const existingInstances = data.filter(instance => instanceIds.includes(instance.InstanceId));
-      
+      const existingInstances = data.filter((instance) =>
+        instanceIds.includes(instance.InstanceId)
+      );
+
       setInstances(existingInstances);
 
-      const newInstances = fetchedInstances.filter(instance => !existingInstances.some(existing => existing.InstanceId === instance?.InstanceId));
+      const newInstances = fetchedInstances.filter(
+        (instance) =>
+          !existingInstances.some(
+            (existing) => existing.InstanceId === instance?.InstanceId
+          )
+      );
 
       for (const instance of newInstances) {
         await client.models.Instance.create({
           InstanceId: instance?.InstanceId!,
           InstanceName: instance?.InstanceName,
-          CommandId: instance?.CommandId,
+          LastScanRunCommandId: instance?.LastScanRunCommandId,
           PlatformName: instance?.PlatformName,
           PlatformType: instance?.PlatformType,
           LastScanTime: instance?.LastScanTime,

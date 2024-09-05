@@ -62,7 +62,7 @@ export default function ScheduleScan() {
             InstanceId: instance?.InstanceId!,
             InstanceName: instance?.InstanceName,
             RoleName: instance?.RoleName,
-            CommandId: instance?.CommandId,
+            LastScanRunCommandId: instance?.LastScanRunCommandId,
             PlatformName: instance?.PlatformName,
             PlatformType: instance?.PlatformType,
             LastScanTime: instance?.LastScanTime,
@@ -116,7 +116,7 @@ export default function ScheduleScan() {
           InstanceId: instance?.InstanceId!,
           InstanceName: instance?.InstanceName,
           RoleName: instance?.RoleName,
-          CommandId: instance?.CommandId,
+          LastScanRunCommandId: instance?.LastScanRunCommandId,
           PlatformName: instance?.PlatformName,
           PlatformType: instance?.PlatformType,
           LastScanTime: instance?.LastScanTime,
@@ -161,7 +161,7 @@ export default function ScheduleScan() {
           await client.models.Instance.update({
             InstanceId: InstanceID,
             LastScanTime: new Date().toISOString(),
-            CommandId: commandId,
+            LastScanRunCommandId: commandId,
             ScanStatus: "InProgress",
           });
         }
@@ -286,9 +286,9 @@ export default function ScheduleScan() {
                 : "N/A",
           },
           {
-            id: "CommandId",
-            header: "Run Command ID",
-            cell: (item) => item.CommandId || undefined,
+            id: "LastScanRunCommandId",
+            header: "Last Scan Run Command ID",
+            cell: (item) => item.LastScanRunCommandId || undefined,
           },
           {
             id: "scanStatus",
