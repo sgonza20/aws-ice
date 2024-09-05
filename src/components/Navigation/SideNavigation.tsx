@@ -26,8 +26,8 @@ export default function CustomSideNavigation() {
             { type: "link", text: "Scan by Instance", href: "/instances" },
             {
               type: "link",
-              text: "Scan by Platform",
-              href: "/instancesPlatform",
+              text: "Schedule scan",
+              href: "/schedule",
             },
           ],
         },
