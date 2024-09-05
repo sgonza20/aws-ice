@@ -9,7 +9,9 @@ import {
   SpaceBetween,
   FormField,
   Button,
-  Select
+  Select,
+  Icon,
+  Spinner
 } from "@cloudscape-design/components";
 import TextFilter from "@cloudscape-design/components/text-filter";
 import { Schema } from "../../amplify/data/resource";
@@ -46,9 +48,11 @@ export default function Reports() {
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [filteringText, setFilteringText] = useState('');
   const [selectedBenchmark, setSelectedBenchmark] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 10;
 
   async function fetchFindings() {
+    setIsLoading(true);
     try {
       const { data, errors } = await client.models.Finding.list({
         limit: 1000,
@@ -84,9 +88,11 @@ export default function Reports() {
     } catch (error) {
       console.error("Error fetching findings:", error);
     }
+    setIsLoading(false);
   }
   
   async function fetchInstanceNames() {
+    setIsLoading(true);
     try {
       const { data, errors } = await client.models.Instance.list({
         limit: 1000,
@@ -135,7 +141,19 @@ export default function Reports() {
     <ContentLayout>
       <Header
         variant="h1"
-        actions={<SpaceBetween size="xs" direction="horizontal"></SpaceBetween>}
+        actions={<SpaceBetween size="xs" direction="horizontal">
+          <Button
+            onClick={fetchFindings}
+              ariaLabel="Refresh Instances"
+            >
+              {isLoading ? (
+                <Spinner />
+              ) : (
+                <Icon name="refresh" />
+              )}
+              {!isLoading}
+            </Button>
+        </SpaceBetween>}
       >
         Findings
       </Header>
