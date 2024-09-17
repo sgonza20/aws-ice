@@ -59,7 +59,7 @@ export default function Home() {
       value: totalUnknown,
       color: "#778899",
       lastUpdate: new Date().toLocaleDateString(),
-    },
+    }, 
   ];
 
   async function getInstances() {
