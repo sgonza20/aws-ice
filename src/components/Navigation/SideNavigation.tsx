@@ -26,7 +26,7 @@ export default function CustomSideNavigation() {
             { type: "link", text: "Scan by Instance", href: "/instances" },
             {
               type: "link",
-              text: "Schedule scan",
+              text: "Schedule Scan",
               href: "/schedule",
             },
           ],
