@@ -14,7 +14,7 @@ const schema = a.schema({
       LastScanTime: a.string(),
       LastScanBenchmark: a.string(),
       LastScanRunCommandId: a.string(),
-      ScanStatus: a.enum(["Success", "Failed", "InProgress"]),
+      ScanStatus: a.enum(["Success", "Failed", "Running"]),
     })
     .identifier(["InstanceId"])
     .authorization((allow) => [allow.publicApiKey(), allow.authenticated()]),
@@ -42,7 +42,7 @@ const schema = a.schema({
     LastScanTime: a.string(),
     LastScanBenchmark: a.string(),
     LastScanRunCommandId: a.string(),
-    ScanStatus: a.enum(["Success", "Failed", "InProgress"]),
+    ScanStatus: a.enum(["Success", "Failed", "Running"]),
   }),
   HttpResponse: a.customType({
     statusCode: a.integer(),

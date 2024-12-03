@@ -163,7 +163,7 @@ export default function ScanByInstance() {
             LastScanTime: new Date().toISOString(),
             LastScanBenchmark: Benchmark,
             LastScanRunCommandId: commandId,
-            ScanStatus: "InProgress",
+            ScanStatus: "Running",
           });
         }
       }
