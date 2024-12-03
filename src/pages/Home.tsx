@@ -252,7 +252,7 @@ export default function Home() {
       <SpaceBetween size="l">
         <Box textAlign="center" margin="l">
           <img
-            src="//logo.png"
+            src="logo.png"
             alt="aws-ice"
             style={{ maxWidth: "200px", height: "auto" }}
           />

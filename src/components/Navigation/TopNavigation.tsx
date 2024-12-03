@@ -10,7 +10,7 @@ export default function CustomTopNavigation() {
         href: "/",
         title: "Instance Compliance Evaluation for AWS",
         logo: {
-          src: "//logo.png",
+          src: "logo.png",
           alt: "aws-ice",
           },
       }}
