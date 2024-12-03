@@ -162,7 +162,7 @@ export default function ScheduleScan() {
             InstanceId: InstanceID,
             LastScanTime: new Date().toISOString(),
             LastScanRunCommandId: commandId,
-            ScanStatus: "InProgress",
+            ScanStatus: "Running",
           });
         }
       }
